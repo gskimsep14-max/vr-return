@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>VR 반납 확인증</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 색상 톤: 연한 분홍 바탕 위의 흰색 카드, 버건디(크림슨) 강조색, 회색 칩, 갈색 계열 표 머리글 */
+:root{
+  --bg:#ffffff; --surface:#ffffff; --surface-2:#fafafa; --ink:#000000; --muted:#444444; --line:#e3e3e3;
+  --accent:#a61955; --accent-ink:#ffffff; --accent-soft:#fce9f1; --accent-dark:#620f32; --accent-track:#fadce8;
+  --chip:#e9e9e9; --chip-ink:#222222; --th:#620f32;
+  --ok:#1f7a4f; --ok-soft:#e3f3ea; --warn:#96600a; --warn-soft:#fbf0d9; --bad:#c62828; --bad-soft:#fdeaea;
+  --pad-bg:#ffffff; --pad-line:#cfcfcf;
+  --font:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.65}
+.shell{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px}
+.col{max-width:720px;margin:0 auto}
+.col.wide{max-width:1080px}
+header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;margin-bottom:16px}
+.brand{display:flex;gap:10px;align-items:center;min-width:0}
+.brand svg{flex:none;width:20px;height:20px;fill:var(--ink)}
+.brand small{display:block;color:var(--muted);font-size:12px}
+.brand h1{margin:0;font-size:20px;line-height:1.3;font-weight:700;text-wrap:balance}
+.tabs{display:flex;gap:6px}
+.tabs button{border:0;background:var(--chip);color:var(--chip-ink);font:inherit;font-size:13px;font-weight:500;padding:7px 14px;border-radius:6px;cursor:pointer;min-height:36px}
+.tabs button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+h2{font-size:18px;margin:0 0 4px;line-height:1.4;text-wrap:balance}
+h3{font-size:14px;margin:22px 0 8px;color:var(--muted);font-weight:500}
+p{margin:0 0 10px}
+.lead{color:var(--muted)}
+.panel{background:var(--surface);border-radius:16px;padding:22px 20px}
+.progress{margin-bottom:12px}
+.progress .row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:6px}
+.progress .bar{height:5px;background:#f1dae6;border-radius:5px;overflow:hidden}
+.progress .bar i{display:block;height:100%;background:var(--accent);transition:width .25s}
+dl.info{display:grid;grid-template-columns:7.5em 1fr;gap:8px 12px;margin:10px 0 0;font-size:14px}
+dl.info dt{color:var(--muted)} dl.info dd{margin:0;min-width:0;overflow-wrap:anywhere}
+ol.flow{list-style:none;padding:0;margin:8px 0 0;display:grid;gap:6px;counter-reset:s}
+ol.flow li{counter-increment:s;display:flex;gap:10px;align-items:baseline;font-size:14px}
+ol.flow li::before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;display:grid;place-items:center}
+.note{font-size:13px;color:var(--muted);border-left:3px solid var(--line);padding:2px 0 2px 12px;margin:10px 0}
+.note.warn{border-color:var(--warn);color:var(--warn)}
+hr{border:0;border-top:1px solid var(--line);margin:20px 0}
+.field{margin:0 0 16px}
+.field>label,.field>.lbl{display:block;font-size:14px;font-weight:500;margin-bottom:6px}
+.field .hint{font-size:12.5px;color:var(--muted);margin-top:5px}
+.req::after{content:" *";color:var(--accent)}
+input[type=text],input[type=tel],input[type=password],input[type=date],textarea{width:100%;min-height:46px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink);font:inherit}
+textarea{min-height:96px;resize:vertical}
+input:focus-visible,textarea:focus-visible,button:focus-visible,label.opt:focus-within,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.opts{display:grid;gap:8px}
+label.opt{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);cursor:pointer;min-height:46px;font-size:14.5px}
+label.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+label.opt input{margin:3px 0 0;width:18px;height:18px;accent-color:var(--accent);flex:none}
+.opts.inline{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.scale{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.scale label{display:grid;gap:2px;place-items:center;text-align:center;padding:10px 2px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);cursor:pointer;font-size:18px;font-weight:700;min-height:56px}
+.scale label small{font-size:11px;font-weight:400;color:var(--muted);line-height:1.25}
+.scale label:has(input:checked){border-color:var(--accent);background:var(--accent);color:var(--accent-ink)}
+.scale label:has(input:checked) small{color:var(--accent-ink)}
+.scale input{position:absolute;opacity:0;pointer-events:none}
+.scale label:focus-within{outline:2px solid var(--accent);outline-offset:2px}
+.btnrow{display:flex;gap:10px;margin-top:22px;flex-wrap:wrap}
+.btn{font:inherit;font-size:15px;font-weight:500;border-radius:8px;padding:11px 20px;min-height:46px;cursor:pointer;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.danger{border-color:var(--bad);background:transparent;color:var(--bad)}
+.btn.small{min-height:36px;padding:6px 12px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btnrow .grow{flex:1}
+.linkbtn{font:inherit;font-size:13px;color:var(--accent);background:none;border:0;padding:4px 0;cursor:pointer;text-decoration:underline}
+.err{margin-top:14px;font-size:13.5px;color:var(--bad);background:var(--bad-soft);border-radius:8px;padding:10px 12px}
+.banner{font-size:13px;color:var(--warn);background:var(--warn-soft);border-radius:8px;padding:9px 12px;margin-bottom:14px}
+.helpbox{margin-top:8px;display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));font-size:13px;color:var(--muted)}
+.helpbox>div{min-width:0}
+.helpbox img{border-radius:8px;border:1px solid var(--line);display:block;width:100%;max-width:420px;height:auto}
+.pad{position:relative;border:1px dashed var(--pad-line);border-radius:10px;background:var(--pad-bg);overflow:hidden}
+.pad canvas{display:block;width:100%;height:170px;touch-action:none;cursor:crosshair}
+.pad .ph{position:absolute;inset:0;display:grid;place-items:center;color:#9a8f95;font-size:13px;pointer-events:none}
+.padbar{display:flex;justify-content:space-between;align-items:center;margin-top:6px;font-size:12.5px;color:var(--muted)}
+.sumlist{display:grid;grid-template-columns:7em 1fr;gap:6px 12px;font-size:14px;margin:0}
+.sumlist dt{color:var(--muted)} .sumlist dd{margin:0;overflow-wrap:anywhere}
+.pill{display:inline-block;font-size:12px;font-weight:500;padding:2px 9px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)} .pill.wait{background:var(--warn-soft);color:var(--warn)} .pill.bad{background:var(--bad-soft);color:var(--bad)} .pill.mute{background:var(--chip);color:var(--chip-ink)}
+.receipt{background:var(--surface);border-radius:16px;overflow:hidden}
+.receipt .rh{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+.receipt .rh b{font-size:16px;display:block}
+.receipt .rh span{font-size:12.5px;color:var(--muted)}
+.receipt .rb{padding:16px 18px}
+.sigrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.sigbox{border:1px solid var(--line);border-radius:8px;padding:8px;background:var(--pad-bg);min-height:96px;display:grid;gap:4px;align-content:start}
+.sigbox small{color:#7a6f75;font-size:11.5px}
+.sigbox img{max-width:100%;height:64px;object-fit:contain;object-position:left}
+.sigbox .empty{height:64px;display:grid;place-items:center;color:#888888;font-size:12px}
+.done-ico{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-size:22px;background:var(--ok-soft);color:var(--ok);margin-bottom:10px}
+.done-ico.wait{background:var(--warn-soft);color:var(--warn)}
+.cardhead{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:17px;font-weight:700}
+.cardhead svg{width:16px;height:16px;fill:var(--ink);flex:none}
+.todo{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 28px;margin-bottom:16px}
+.todo div{display:flex;justify-content:space-between;align-items:baseline;padding:9px 2px;border-bottom:1px solid var(--line);font-size:14.5px}
+.todo b{color:var(--accent);font-variant-numeric:tabular-nums}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:12px}
+.toolbar input{max-width:260px;min-height:38px;padding:6px 12px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font:inherit;font-size:13px;font-weight:500;border:0;background:var(--chip);color:var(--chip-ink);border-radius:6px;padding:6px 13px;cursor:pointer;min-height:34px}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+.tablewrap{overflow-x:auto;border-radius:12px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{font-size:12.5px;color:#fff;font-weight:500;background:var(--th)}
+tbody tr{cursor:pointer} tbody tr:hover{background:var(--surface-2)} tbody tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums}
+.empty-state{padding:34px 18px;text-align:center;color:var(--muted);font-size:14px}
+.bars{display:grid;gap:7px;margin:8px 0 4px}
+.barrow{display:grid;grid-template-columns:minmax(120px,38%) 1fr 74px;gap:10px;align-items:center;font-size:13.5px}
+.barrow .t{overflow-wrap:anywhere}
+.barrow .track{height:10px;background:#f1e3ea;border-radius:5px;overflow:hidden}
+.barrow .track i{display:block;height:100%;background:var(--accent)}
+.barrow .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-size:12.5px}
+.qcard{background:var(--surface);border-radius:14px;padding:16px 18px;margin-bottom:12px}
+.qcard h4{margin:0 0 4px;font-size:14px}
+.qcard .qid{display:inline-block;font-size:11px;font-weight:700;color:var(--accent);background:var(--accent-soft);border-radius:4px;padding:0 6px;margin-right:6px}
+.comments{display:grid;gap:8px;margin:8px 0 0;padding:0;list-style:none}
+.comments li{background:var(--surface-2);border-radius:8px;padding:9px 12px;font-size:13.5px;overflow-wrap:anywhere}
+.checks{display:grid;gap:8px}
+.back{margin-bottom:10px}
+.footnote{margin-top:26px;font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center}
+.copy{user-select:all}
+@media (max-width:520px){
+  .grid2{grid-template-columns:1fr}
+  dl.info,.sumlist{grid-template-columns:6em 1fr}
+  .panel{padding:18px 15px}
+  .barrow{grid-template-columns:1fr 64px;grid-template-areas:"t v" "tr tr"} .barrow .t{grid-area:t}.barrow .v{grid-area:v}.barrow .track{grid-area:tr}
+  .sigrow{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== refine: hero, stepper, sticky actions, motion ===== */
+:root{--hero-a:#a61955;--hero-b:#620f32;--shadow:0 12px 32px rgba(0,0,0,.08);--shadow-sm:0 2px 8px rgba(0,0,0,.05)}
+.hero{position:relative;overflow:hidden;border-radius:22px;padding:22px 20px 20px;margin-bottom:16px;color:#fff;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(255,255,255,.16) 0,rgba(255,255,255,0) 55%),linear-gradient(135deg,var(--hero-a),var(--hero-b));
+  box-shadow:var(--shadow);display:flex;flex-wrap:wrap;gap:14px 16px;align-items:flex-end;justify-content:space-between}
+.hero-text{position:relative;z-index:1;min-width:0;max-width:30em}
+.hero .eyebrow{display:inline-block;font-size:11.5px;font-weight:500;letter-spacing:.06em;background:rgba(255,255,255,.18);padding:3px 10px;border-radius:99px;margin-bottom:10px}
+.hero h1{margin:0 0 6px;font-size:23px;line-height:1.3;font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.hero p{margin:0;font-size:13.5px;line-height:1.55;color:rgba(255,255,255,.86)}
+.hero .visor{position:absolute;right:-18px;top:-10px;width:170px;height:auto;opacity:.16;pointer-events:none}
+.hero .tabs{position:relative;z-index:1}
+.hero .tabs button{background:rgba(255,255,255,.18);color:#fff;border-radius:99px}
+.hero .tabs button[aria-pressed="true"]{background:#fff;color:var(--hero-a)}
+.panel{border-radius:20px;box-shadow:var(--shadow-sm)}
+.enter{animation:rise .3s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.stepper{list-style:none;margin:2px 0 16px;padding:0;display:flex;align-items:flex-start}
+.stepper li{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;font-size:11px;color:var(--muted);text-align:center;line-height:1.3}
+.stepper li::before{content:"";position:absolute;top:13px;right:50%;width:100%;height:2px;background:var(--line)}
+.stepper li:first-child::before{display:none}
+.stepper li.done::before,.stepper li.cur::before{background:var(--accent)}
+.stepper .dot{position:relative;z-index:1;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12.5px;font-weight:700;background:var(--surface);border:2px solid var(--line);color:var(--muted)}
+.stepper li.done .dot{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.stepper li.cur .dot{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.stepper li.cur{color:var(--ink);font-weight:500}
+input[type=text],input[type=tel],input[type=password],input[type=date],textarea{min-height:50px;border-radius:12px;transition:border-color .15s,box-shadow .15s}
+input[type=text]:focus,input[type=tel]:focus,input[type=password]:focus,input[type=date]:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+label.opt{border-radius:12px;min-height:52px;align-items:center;transition:border-color .15s,background .15s}
+label.opt:hover{border-color:var(--accent)}
+.scale label{border-radius:12px;min-height:64px;transition:background .15s,border-color .15s,color .15s}
+.scale label:hover{border-color:var(--accent)}
+.btn{border-radius:12px;min-height:50px;transition:transform .1s,box-shadow .15s}
+.btn:not(.ghost):not(.danger):not([disabled]){box-shadow:0 6px 16px rgba(166,25,85,.25)}
+.btn:active:not([disabled]){transform:translateY(1px)}
+.btnrow.sticky{position:sticky;bottom:0;z-index:5;margin:22px -20px -22px;padding:14px 20px calc(14px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,var(--surface) 72%,transparent);border-radius:0 0 20px 20px}
+.receipt{border-radius:20px;box-shadow:var(--shadow-sm)}
+.receipt::before{content:"";display:block;height:6px;background:linear-gradient(90deg,var(--hero-a),var(--hero-b))}
+.receipt .rh{border-bottom:2px dashed var(--line)}
+.done-ico{animation:pop .45s cubic-bezier(.2,1.4,.4,1) both;width:52px;height:52px;font-size:26px}
+@keyframes pop{from{transform:scale(.4);opacity:0}to{transform:none;opacity:1}}
+.tablewrap{box-shadow:var(--shadow-sm)}
+.qcard{box-shadow:var(--shadow-sm)}
+.todo div,.tile{transition:background .15s}
+.footnote{margin-top:22px}
+@media (max-width:520px){
+  .hero{padding:18px 16px 16px;border-radius:18px}
+  .hero h1{font-size:20px}
+  .btnrow.sticky{margin:22px -15px -18px;padding-left:15px;padding-right:15px}
+}
+@media (prefers-reduced-motion:reduce){.enter,.done-ico{animation:none!important}}
+
+/* ===== tone: white ground, black text, accent #A61955 (Pantone 215C) with lightness-only variants ===== */
+.panel,.receipt,.qcard,.tablewrap,.tile{border:1px solid var(--line)}
+.progress .bar,.barrow .track{background:var(--accent-track)}
+.stepper .dot{border-color:#d2d2d2}
+.stepper li::before{background:#e3e3e3}
+th{background:var(--th)}
+.hero .eyebrow{background:rgba(255,255,255,.2)}
+
+/* 첫 안내 화면: 번호 원에 쓰인 연한 핑크(--accent-soft) 바탕 */
+.panel.intro-tone{background:var(--accent-soft);border-color:#f3c6da}
+.intro-tone ol.flow li::before{background:#fff}
+.intro-tone .btnrow.sticky{background:linear-gradient(to top,var(--accent-soft) 72%,transparent)}
+.intro-tone hr{border-top-color:#f0c2d6}
+.intro-tone .note{border-left-color:#e9a9c4}
+
+/* ===== 선택 컨트롤: 흰색 동그라미/네모, 척도 버튼 축소 ===== */
+label.opt input[type=radio],label.opt input[type=checkbox]{-webkit-appearance:none;appearance:none;width:20px;height:20px;margin:0;flex:none;background:#fff;border:2px solid #b5b5b5;cursor:pointer;transition:border-color .15s}
+label.opt input[type=radio]{border-radius:50%}
+label.opt input[type=checkbox]{border-radius:6px}
+label.opt input[type=radio]:checked{border-color:var(--accent);background:radial-gradient(circle,var(--accent) 0 36%,#fff 40%)}
+label.opt input[type=checkbox]:checked{border-color:var(--accent);background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 8.5l3.2 3.2L13 4.8' fill='none' stroke='%23a61955' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/14px no-repeat}
+.scale{gap:6px}
+.scale label{min-height:42px;padding:4px 2px;font-size:15px;font-weight:500;border-radius:10px}
+.scalelegend{display:flex;justify-content:space-between;gap:12px;margin-top:6px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="shell"><div class="col" id="col">
+  <header class="hero">
+    <svg class="visor" viewBox="0 0 200 110" aria-hidden="true"><path fill="#fff" d="M30 20h140a22 22 0 0 1 22 22v26a22 22 0 0 1-22 22h-34l-14-16h-24l-14 16H30A22 22 0 0 1 8 68V42a22 22 0 0 1 22-22z"/></svg>
+    <div class="hero-text"><span class="eyebrow">메타버시티 교육추진단</span><h1>VR 기기 반납 확인증 · 설문</h1><p>졸업 전 반납 확인증과 설문을 한 번에, 약 3분이면 끝나요.</p></div>
+    <nav class="tabs" id="tabs" hidden aria-label="화면 전환"></nav>
+  </header>
+  <div id="banner"></div>
+  <main id="main"></main>
+  <div class="footnote">
+    <span>문의: 포스텍 메타버시티교육추진단 <span class="copy">p-meta@postech.ac.kr</span> · <span class="copy">010-7121-4019</span></span>
+    <button type="button" class="linkbtn" id="stafflink">담당자 로그인</button>
+  </div>
+</div></div>
+
+<script>
+/* ===================== 배포 설정 (여기만 수정하세요) ===================== */
+const CONFIG = {
+  // Google Apps Script 웹 앱 URL(…/exec). 비워 두면 '체험 모드'로, 이 브라우저에만 저장됩니다.
+  API_URL: "",
+  // 라벨 번호 앞부분 (예: 202612-001)
+  LABEL_PREFIX: "202612-",
+  // 체험 모드에서만 쓰는 담당자 키. 실제 배포에서는 서버(Apps Script)의 STAFF_KEY가 적용됩니다.
+  DEMO_STAFF_KEY: "demo"
+};
+/* ========================================================================= */
+</script>
+<script>
+(() => {
+"use strict";
+const LABEL_PREFIX = CONFIG.LABEL_PREFIX;
+const PARTS = [["hmd","HMD 본체"],["ctrl","컨트롤러(2개)"],["charger","충전기"],["cable","케이블"]];
+const A1_OPTS = ["수업(교수가 지정한 VR 활용 수업)","전공·교양 자기주도 학습","창의적 활동·개인 프로젝트","영상 시청·게임 등 여가","기타(직접 기재)"];
+const B1_OPTS = ["사용할 기회가 없었다","기회는 있었으나 사용하지 않았다"];
+const B2_OPTS = ["수업에서 VR을 활용하지 않았다","사용 방법·활용 방법을 몰랐다","활용할 만한 콘텐츠가 없었다","필요성을 느끼지 못했다","기기 문제(미수령·분실·고장 등)","멀미·눈 피로 등 신체 불편이 우려되었다","기타(직접 기재)"];
+const COND = {ok:"정상 작동", damaged:"일부 파손/오작동", other:"기타"};
+const IMG1 = "data:image/jpeg;base64,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";
+const IMG2 = "data:image/jpeg;base64,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";
+const PIN_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 9V4h1c.55 0 1-.45 1-1s-.45-1-1-1H7c-.55 0-1 .45-1 1s.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z"/></svg>';
+
+/* ---------- helpers ---------- */
+const $ = (s, r=document) => r.querySelector(s);
+function h(tag, props, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(props||{})){
+    if (v==null || v===false) continue;
+    if (k==="class") e.className = v;
+    else if (k==="text") e.textContent = v;
+    else if (k==="html") e.innerHTML = v;
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k==="value"||k==="checked"||k==="disabled"||k==="hidden") e[k] = v;
+    else e.setAttribute(k, v===true ? "" : v);
+  }
+  for (const c of kids.flat()){ if (c==null||c===false) continue; e.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return e;
+}
+const todayISO = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+const kDate = iso => { if(!iso) return ""; const [y,m,d]=iso.split("-"); return `${y}년 ${+m}월 ${+d}일`; };
+const kTime = iso => { try{ const d=new Date(iso); return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }catch{ return ""; } };
+const digits = s => (s||"").replace(/\D/g,"");
+const modelName = m => m==="q3" ? "Meta Quest 3" : m==="q2" ? "Meta Quest 2" : "";
+const hasIssue = r => PARTS.some(([k]) => !(r.parts||{})[k]) || r.condition !== "ok";
+const missingParts = r => PARTS.filter(([k]) => !(r.parts||{})[k]).map(p=>p[1]);
+function download(name, blob){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=name; document.body.append(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},1500);
+}
+const lsGet = k => { try{ return JSON.parse(localStorage.getItem(k)); }catch{ return null; } };
+const lsSet = (k,v) => { try{ v==null ? localStorage.removeItem(k) : localStorage.setItem(k,JSON.stringify(v)); }catch{} };
+const ssGet = k => { try{ return sessionStorage.getItem(k); }catch{ return null; } };
+const ssSet = (k,v) => { try{ v==null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k,v); }catch{} };
+
+/* ---------- API (서버 또는 체험 모드) ---------- */
+const DEMO = !CONFIG.API_URL;
+async function api(action, data){
+  if (DEMO) return demoApi(action, data||{});
+  const r = await fetch(CONFIG.API_URL, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(Object.assign({action}, data||{}))});
+  const j = await r.json();
+  if (!j.ok) throw Object.assign(new Error(j.error||"error"), {code:j.error||"error"});
+  return j;
+}
+function demoApi(action, d){
+  const db = lsGet("vrret_demo") || {returns:{}, surveys:[]};
+  const save = () => lsSet("vrret_demo", db);
+  const fail = c => { throw Object.assign(new Error(c),{code:c}); };
+  const staffOnly = () => { if (d.key!==CONFIG.DEMO_STAFF_KEY) fail("unauthorized"); };
+  const pinOk = r => r && digits(r.phone).slice(-4)===String(d.pin||"");
+  switch(action){
+    case "submit": {
+      const old=db.returns[d.rec.sid]; if (old && old.status==="confirmed") fail("already_confirmed");
+      db.returns[d.rec.sid]=d.rec; if (d.survey) db.surveys.push(d.survey); save(); return {ok:true};
+    }
+    case "lookup": { const r=db.returns[d.sid]; return {ok:true, rec: pinOk(r) ? Object.assign({_id:d.sid},r) : null}; }
+    case "staffList": staffOnly(); return {ok:true, returns:Object.entries(db.returns).map(([id,r])=>Object.assign({_id:id},r)), surveys:db.surveys};
+    case "staffConfirm": staffOnly(); Object.assign(db.returns[d.sid],{status:"confirmed",staff:d.staff}); save(); return {ok:true};
+    case "staffRevert": staffOnly(); Object.assign(db.returns[d.sid],{status:"pending",staff:null}); save(); return {ok:true};
+    case "staffDelete": staffOnly(); delete db.returns[d.sid]; save(); return {ok:true};
+  }
+  fail("bad_action");
+}
+
+/* ---------- signature pad ---------- */
+function createPad(){
+  const wrap = h("div",{class:"pad"});
+  const canvas = h("canvas",{"aria-label":"서명란"});
+  const ph = h("div",{class:"ph",text:"여기에 손가락 또는 마우스로 서명해 주세요"});
+  wrap.append(canvas, ph);
+  const ctx = canvas.getContext("2d");
+  let drawing=false, dirty=false, last=null, ready=false;
+  function size(){
+    const w = canvas.clientWidth || 320, hgt = canvas.clientHeight || 170, dpr = Math.min(window.devicePixelRatio||1,2);
+    canvas.width = Math.round(w*dpr); canvas.height = Math.round(hgt*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0); ctx.lineWidth=2.2; ctx.lineCap="round"; ctx.lineJoin="round"; ctx.strokeStyle="#000000";
+    ready=true;
+  }
+  const pos = e => { const r=canvas.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; };
+  canvas.addEventListener("pointerdown", e=>{ if(!ready) size(); drawing=true; last=pos(e); canvas.setPointerCapture(e.pointerId);
+    ctx.beginPath(); ctx.arc(last.x,last.y,1.1,0,6.3); ctx.fillStyle="#000000"; ctx.fill(); dirty=true; ph.hidden=true; e.preventDefault(); });
+  canvas.addEventListener("pointermove", e=>{ if(!drawing) return; const p=pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; e.preventDefault(); });
+  const end = () => { drawing=false; };
+  canvas.addEventListener("pointerup", end); canvas.addEventListener("pointercancel", end);
+  requestAnimationFrame(size);
+  return {
+    el: wrap,
+    isEmpty: () => !dirty,
+    clear(){ size(); dirty=false; ph.hidden=false; },
+    data(){
+      const out=document.createElement("canvas"); out.width=480; out.height=160; const c=out.getContext("2d");
+      c.fillStyle="#fff"; c.fillRect(0,0,480,160);
+      const r=Math.min(480/canvas.width,160/canvas.height), w=canvas.width*r, hh=canvas.height*r;
+      c.drawImage(canvas,(480-w)/2,(160-hh)/2,w,hh);
+      let url=out.toDataURL("image/png");
+      if (url.length>40000) url=out.toDataURL("image/jpeg",0.6);
+      return url;
+    }
+  };
+}
+
+/* ---------- form controls ---------- */
+function choice(type, name, options, get, set){
+  const box = h("div",{class:"opts"});
+  options.forEach(([val,label]) => {
+    const input = h("input",{type, name, value:val});
+    if (type==="radio") input.checked = get()===val; else input.checked = (get()||[]).includes(val);
+    input.addEventListener("change", () => {
+      if (type==="radio") set(val);
+      else { const cur=new Set(get()||[]); input.checked ? cur.add(val) : cur.delete(val); set([...cur]); }
+    });
+    box.append(h("label",{class:"opt"}, input, h("span",{text:label})));
+  });
+  return box;
+}
+function scale5(get,set,lo,hi){
+  const box = h("div",{class:"scale",role:"radiogroup"});
+  [1,2,3,4,5].forEach(n=>{
+    const input = h("input",{type:"radio",name:"a2",value:String(n)}); input.checked = get()===n;
+    input.addEventListener("change",()=>set(n));
+    box.append(h("label",{}, input, h("span",{text:String(n)})));
+  });
+  return h("div",{}, box, h("div",{class:"scalelegend"}, h("span",{text:lo}), h("span",{text:hi})));
+}
+function field(label, control, opts={}){
+  return h("div",{class:"field"}, h("label",{class:opts.req?"req":"",text:label}), control, opts.hint?h("div",{class:"hint",text:opts.hint}):null);
+}
+function textInput(get,set,props={}){
+  const i = h("input",Object.assign({type:"text",autocomplete:"off"},props)); i.value = get()||"";
+  i.addEventListener("input",()=>set(i.value)); return i;
+}
+
+/* ---------- state ---------- */
+const S = { view:"student", staffTab:"returns", step:1, form:null, survey:null, me:null, key:null, all:[], surveys:[], filter:"all", query:"", openId:null, busy:false };
+function freshForm(){
+  S.form = {consent:null,name:"",sid:"",dept:"",phone:"",method:"visit",model:null,serial:"",parts:{hmd:false,ctrl:false,charger:false,cable:false},condition:null,conditionNote:"",note:"",date:todayISO(),agree:false};
+  S.survey = {s1:null,a1:[],a1other:"",a2:null,b1:null,b2:null,b2other:"",c1:""};
+}
+freshForm();
+const main = $("#main");
+
+/* ---------- boot ---------- */
+async function boot(){
+  const ht=$(".hero-text"); ht.setAttribute("role","button"); ht.setAttribute("tabindex","0"); ht.setAttribute("aria-label","첫 화면"); ht.style.cursor="pointer"; ht.addEventListener("click",goHome); ht.addEventListener("keydown",e=>{ if(e.key==="Enter") goHome(); });
+  if (DEMO) $("#banner").append(h("div",{class:"banner",text:"체험 모드입니다. 입력한 내용은 이 브라우저에만 저장되며 다른 사람에게 전달되지 않습니다. (담당자 키: "+CONFIG.DEMO_STAFF_KEY+")"}));
+  $("#stafflink").addEventListener("click",async()=>{
+    S.view = "staffLogin";
+    if (S.key){ try{ await loadStaff(); S.view="staff"; }catch{ S.key=null; ssSet("vrret_key",null); } }
+    setupTabs(); render(); window.scrollTo(0,0); });
+  const saved = lsGet("vrret_me");
+  if (saved){ try{ const j=await api("lookup",saved); S.me=j.rec; if(!j.rec) lsSet("vrret_me",null); }catch{} }
+  const k=ssGet("vrret_key"); if (k){ S.key=k; }
+  render();
+  setInterval(async()=>{ if (S.view==="staff" && S.key && !S.openId && !document.hidden){ const before=JSON.stringify(S.all); try{ await loadStaff(); if (JSON.stringify(S.all)!==before) render(); }catch{} } }, 30000);
+}
+async function loadStaff(){ const j=await api("staffList",{key:S.key}); S.all=j.returns||[]; S.surveys=j.surveys||[]; }
+function setupTabs(){
+  const nav=$("#tabs"); nav.replaceChildren();
+  if (S.view==="staff" || S.view==="student" && S.key){
+    nav.hidden=false;
+    [["student","학생 화면"],["staff","담당자"]].forEach(([v,l])=>nav.append(h("button",{type:"button","aria-pressed":String(S.view===v),text:l,onclick:()=>{S.view=v;S.openId=null;setupTabs();render();}})));
+  } else nav.hidden=true;
+}
+
+/* ---------- render root ---------- */
+function render(){
+  $("#col").classList.toggle("wide", S.view==="staff");
+  main.replaceChildren();
+  if (S.view==="staffLogin") return main.append(staffLogin());
+  if (S.view==="staff") return main.append(staffView());
+  if (S.view==="lookup") return main.append(lookupView());
+  if (S.intro) return main.append(introView());
+  if (S.me) return main.append(doneView());
+  main.append(wizard());
+}
+
+/* ---------- student wizard ---------- */
+const STEP_NAMES = ["안내·동의","학생 정보","기기 확인","설문","서명·제출"];
+function wizard(){
+  const wrap = h("div",{});
+  const n = S.step;
+  wrap.append(h("ol",{class:"stepper","aria-label":"진행 단계"},
+    ...STEP_NAMES.map((nm,i)=>h("li",{class:i+1<n?"done":(i+1===n?"cur":""),"aria-current":i+1===n?"step":null},
+      h("span",{class:"dot",text:i+1<n?"✓":String(i+1)}),h("span",{class:"lb",text:nm})))));
+  const panel = h("div",{class:"panel enter"+(n===1?" intro-tone":"")});
+  const err = h("div",{class:"err",hidden:true,role:"alert"});
+  const showErr = msgs => { err.hidden=!msgs.length; err.replaceChildren(...msgs.map(m=>h("div",{text:m}))); if(msgs.length) err.scrollIntoView({block:"center",behavior:"smooth"}); };
+  const body = [step1,step2,step3,step4,step5][n-1](showErr);
+  panel.append(body.el, err, body.nav);
+  wrap.append(panel);
+  if (S.editing) wrap.append(h("button",{type:"button",class:"linkbtn",style:"margin-top:12px",text:"취소하고 제출내용으로 돌아가기",onclick:goHome}));
+  else if (n>1) wrap.append(h("button",{type:"button",class:"linkbtn",style:"margin-top:12px",text:"← 첫 화면",onclick:goHome}));
+  return wrap;
+}
+function navRow(prev, nextLabel, onNext){
+  return h("div",{class:"btnrow sticky"},
+    prev ? h("button",{class:"btn ghost",type:"button",text:"이전",onclick:()=>{S.step--;render();window.scrollTo(0,0);}}) : null,
+    h("button",{class:"btn grow",type:"button",text:nextLabel,onclick:onNext,id:"nextbtn"}));
+}
+function goNext(){ S.step++; render(); window.scrollTo(0,0); }
+
+function step1(showErr){
+  const f=S.form;
+  const el = h("div",{},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>졸업을 축하드립니다</span>"}),
+    h("p",{class:"lead",text:"입학 때 지급받은 VR 기기의 반납 확인증과 설문을 한 번에 작성합니다. 마지막 단계에서 본인 서명을 하면 제출이 끝납니다."}),
+    h("dl",{class:"info"},
+      h("dt",{text:"반납 대상"}),h("dd",{text:"2027년 2월 졸업 예정자"}),
+      h("dt",{text:"반납 기기"}),h("dd",{text:"VR 본체, 컨트롤러(2개), 충전기, 케이블"}),
+      h("dt",{text:"반납 장소"}),h("dd",{text:"학생회관 1층 커리어라운지 상담실 B (카페 맞은편)"}),
+      h("dt",{text:"반납 일정"}),h("dd",{text:"2026년 12월 10일(목) ~ 12월 11일(금) 11:00 ~ 16:00"}),
+      h("dt",{text:"택배 반납"}),h("dd",{},"택배비 본인 부담",h("br"),"주소: 포항시 남구 청암로 77 무은재기념관 109호 교육혁신센터 메타버시티교육추진단",h("br"),"전화: 010-7121-4019")),
+    h("h3",{text:"진행 순서"}),
+    h("ol",{class:"flow"},h("li",{text:"이 화면에서 확인증 작성, 설문, 본인 서명"}),h("li",{text:"기기 반납 (현장 담당자가 외관·성능·시리얼 번호 점검)"}),h("li",{text:"담당자 서명 후 확인 완료 화면과 확인증 이미지 수령"})),
+    h("h3",{text:"유의 사항"}),
+    h("div",{class:"note",text:"기기(VR 본체, 컨트롤러, 충전기, 케이블)가 파손된 경우 유상수리 비용에 대한 배상 책임은 없습니다."}),
+    h("div",{class:"note warn",text:"서약서에 따라 기기(VR 본체, 컨트롤러, 충전기)를 분실한 경우 동일 제품으로 배상해야 합니다. 충전기·케이블은 C to C 타입이면 동일 제품이 아니어도 됩니다."}),
+    h("hr"),
+    h("h3",{text:"개인정보 수집 및 이용 동의"}),
+    h("dl",{class:"info"},
+      h("dt",{text:"수집 항목"}),h("dd",{text:"학과, 연락처, 성명, 학번"}),
+      h("dt",{text:"이용 목적"}),h("dd",{text:"VR 기기 반납 확인"}),
+      h("dt",{text:"보유 기간"}),h("dd",{text:"반납일로부터 1년"})),
+    h("div",{class:"field",style:"margin-top:14px"}, choice("radio","consent",[["yes","동의함"],["no","동의하지 않음"]],()=>f.consent,v=>{f.consent=v;showErr([]);})),
+    h("button",{type:"button",class:"linkbtn",text:"이미 제출하셨나요? 제출 내용·확인 상태 보기",onclick:()=>{S.view="lookup";render();window.scrollTo(0,0);}})
+  );
+  const nav = navRow(false,"다음",()=>{
+    if (f.consent!=="yes") return showErr(["개인정보 수집·이용에 동의해야 온라인으로 반납 확인증을 작성할 수 있습니다. 동의하지 않는 경우 담당자에게 문의해 주세요."]);
+    showErr([]); goNext();
+  });
+  return {el,nav};
+}
+
+function step2(showErr){
+  const f=S.form;
+  const el = h("div",{},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>학생 정보</span>"}),
+    h("p",{class:"lead",text:"확인증에 표시될 정보입니다."}),
+    h("div",{class:"grid2"},
+      field("이름", textInput(()=>f.name,v=>f.name=v,{id:"f-name",autocomplete:"name"}),{req:true}),
+      field("학번", textInput(()=>f.sid,v=>f.sid=v,{id:"f-sid",inputmode:"numeric"}),{req:true})),
+    h("div",{class:"grid2"},
+      field("학과", textInput(()=>f.dept,v=>f.dept=v,{id:"f-dept"}),{req:true}),
+      field("연락처", textInput(()=>f.phone,v=>f.phone=v,{id:"f-phone",type:"tel",inputmode:"tel",placeholder:"010-0000-0000",autocomplete:"tel"}),{req:true,hint:"연락처 뒤 4자리는 나중에 제출 내용을 다시 볼 때 사용합니다."})),
+    field("반납 방식", choice("radio","method",[["visit","현장 방문 (학생회관 커리어라운지)"],["parcel","택배 발송"]],()=>f.method,v=>{f.method=v;parcelNote.hidden=v!=="parcel";}),{req:true})
+  );
+  const parcelNote = h("div",{class:"note",hidden:f.method!=="parcel",text:"택배 반납은 담당자가 기기를 받아 점검한 뒤 확인 완료 처리됩니다. 제출 후 완료 화면의 '제출내용저장' 버튼으로 이미지를 저장해 p-meta@postech.ac.kr 로 보내 주세요."});
+  el.append(parcelNote);
+  const nav = navRow(true,"다음",()=>{
+    const e=[];
+    if (!f.name.trim()) e.push("이름을 입력해 주세요.");
+    if (!/^\d{6,10}$/.test(f.sid.trim())) e.push("학번은 숫자만 입력해 주세요.");
+    if (!f.dept.trim()) e.push("학과를 입력해 주세요.");
+    if (digits(f.phone).length<9 || digits(f.phone).length>11) e.push("연락처를 확인해 주세요. 예: 010-1234-5678");
+    showErr(e); if(!e.length) goNext();
+  });
+  return {el,nav};
+}
+
+function step3(showErr){
+  const f=S.form;
+  const lost = h("div",{class:"note warn",hidden:true});
+  const updLost = () => { const m=PARTS.filter(([k])=>!f.parts[k]).map(p=>p[1]); lost.hidden = !m.length;
+    lost.textContent = m.length ? `체크하지 않은 부품: ${m.join(", ")}. 분실한 경우 서약서에 따라 동일 제품으로 배상해야 합니다. 부품을 찾았다면 함께 반납해 주세요.` : ""; };
+  const partBox = h("div",{class:"opts inline"});
+  PARTS.forEach(([k,l])=>{ const i=h("input",{type:"checkbox"}); i.checked=f.parts[k]; i.addEventListener("change",()=>{f.parts[k]=i.checked;updLost();}); partBox.append(h("label",{class:"opt"},i,h("span",{text:l}))); });
+  const condNote = h("div",{class:"field",hidden:f.condition==null||f.condition==="ok"},
+    h("label",{class:"req",text:"파손·오작동 내용 또는 기타 상태"}), textInput(()=>f.conditionNote,v=>f.conditionNote=v,{id:"f-cn",placeholder:"예: 왼쪽 컨트롤러 버튼 눌림 불량"}));
+  const help = h("div",{class:"helpbox",hidden:true},
+    h("div",{},h("img",{src:IMG1,alt:"Meta Quest 2 후면 라벨에서 시리얼 번호가 있는 위치",loading:"lazy"}),h("p",{text:"Quest 2: 헤드셋 뒷면 라벨의 빨간 원 부분이 시리얼 번호입니다."})),
+    h("div",{},h("img",{src:IMG2,alt:"반납 대상 구성품: VR 본체, 컨트롤러 2개, 충전기",loading:"lazy"}),h("p",{text:"반납 구성품: VR 본체, 컨트롤러(2개), 충전기(케이블 포함). Quest 3는 기기 설정의 기기 정보 화면에서도 시리얼 번호를 볼 수 있습니다."})));
+  const el = h("div",{},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>기기 확인</span>"}),
+    h("p",{class:"lead",text:"반납할 기기를 직접 확인하고 입력해 주세요. 현장에서 담당자가 다시 점검합니다."}),
+    field("기기 모델", choice("radio","model",[["q2","Meta Quest 2"],["q3","Meta Quest 3"]],()=>f.model,v=>f.model=v),{req:true}),
+    h("div",{class:"field"},h("label",{class:"req",text:"시리얼 번호"}),
+      textInput(()=>f.serial,v=>f.serial=v.toUpperCase(),{id:"f-serial",autocapitalize:"characters",placeholder:"헤드셋 뒷면 라벨의 시리얼 번호"}),
+      h("button",{type:"button",class:"linkbtn",text:"시리얼 번호는 어디에 있나요?",onclick:()=>{help.hidden=!help.hidden;}}), help),
+    field("반납하는 부품 (반납하는 것에 모두 체크)", partBox,{req:true}), lost,
+    field("기기 상태", choice("radio","cond",Object.entries(COND),()=>f.condition,v=>{f.condition=v;condNote.hidden=v==="ok";}),{req:true,hint:"외관: 본체·컨트롤러·충전기의 물리적 손상 여부 / 성능: 렌즈와 디스플레이 화면 표시 상태"}),
+    condNote,
+    field("특이 사항 (선택)", (()=>{const t=h("textarea",{id:"f-note"});t.value=f.note;t.addEventListener("input",()=>f.note=t.value);return t;})())
+  );
+  updLost();
+  const nav = navRow(true,"다음",()=>{
+    const e=[];
+    if (!f.model) e.push("기기 모델을 선택해 주세요.");
+    if (f.serial.trim().length<6) e.push("시리얼 번호를 입력해 주세요.");
+    if (!f.condition) e.push("기기 상태를 선택해 주세요.");
+    else if (f.condition!=="ok" && !f.conditionNote.trim()) e.push("파손·오작동 또는 기타 상태의 내용을 적어 주세요.");
+    showErr(e); if(!e.length) goNext();
+  });
+  return {el,nav};
+}
+
+function step4(showErr){
+  const q=S.survey;
+  const dyn = h("div",{});
+  const draw = () => {
+    dyn.replaceChildren();
+    if (q.s1==="yes"){
+      const o=h("div",{class:"field",hidden:!q.a1.includes(A1_OPTS[4])},h("label",{text:"기타 용도"}),textInput(()=>q.a1other,v=>q.a1other=v,{id:"q-a1o"}));
+      dyn.append(
+        h("h3",{text:"사용 경험이 있는 학생"}),
+        field("A1. VR 기기를 주로 어떤 용도로 사용했습니까? (해당되는 것 모두 선택)", choice("checkbox","a1",A1_OPTS.map(x=>[x,x]),()=>q.a1,v=>{q.a1=v;o.hidden=!v.includes(A1_OPTS[4]);}),{req:true}), o,
+        field("A2. VR 경험은 접근하기 어려운 것을 경험할 수 있어 흥미로웠다.", scale5(()=>q.a2,v=>q.a2=v,"전혀 그렇지 않다","매우 그렇다"),{req:true}));
+    } else if (q.s1==="no"){
+      const o=h("div",{class:"field",hidden:q.b2!==B2_OPTS[6]},h("label",{text:"기타 이유"}),textInput(()=>q.b2other,v=>q.b2other=v,{id:"q-b2o"}));
+      dyn.append(
+        h("h3",{text:"사용 경험이 없는 학생"}),
+        field("B1. 대학 생활 중 VR 기기를 수업이나 학습에 사용할 기회가 있었습니까?", choice("radio","b1",B1_OPTS.map(x=>[x,x]),()=>q.b1,v=>q.b1=v),{req:true}),
+        field("B2. VR 기기를 사용하지 않은 가장 큰 이유는 무엇입니까?", choice("radio","b2",B2_OPTS.map(x=>[x,x]),()=>q.b2,v=>{q.b2=v;o.hidden=v!==B2_OPTS[6];}),{req:true}), o);
+    }
+    if (q.s1){
+      const t=h("textarea",{id:"q-c1"}); t.value=q.c1; t.addEventListener("input",()=>q.c1=t.value);
+      dyn.append(h("hr"), field("C1. 향후 우리 대학의 XR 기술을 활용한 사업 추진을 개선하기 위해 필요하다고 생각하는 점을 자유롭게 작성해 주십시오. (선택)", t));
+    }
+  };
+  const el = h("div",{},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>설문</span>"}),
+    h("p",{class:"lead",text:"VR 기기 활용 경험을 묻는 설문입니다. 설문 응답은 이름·학번과 별도로 저장되며, 집계해 사업 개선에만 사용됩니다."}),
+    field("신입생 때 지급받은 VR 기기를 대학 생활 중 한 번이라도 사용한 경험이 있습니까?", choice("radio","s1",[["yes","있다"],["no","없다"]],()=>q.s1,v=>{q.s1=v;draw();}),{req:true}),
+    dyn);
+  draw();
+  const nav = navRow(true,"다음",()=>{
+    const e=[];
+    if (!q.s1) e.push("사용 경험 여부를 선택해 주세요.");
+    if (q.s1==="yes"){
+      if (!q.a1.length) e.push("A1 용도를 하나 이상 선택해 주세요.");
+      if (q.a1.includes(A1_OPTS[4]) && !q.a1other.trim()) e.push("A1 기타 용도를 적어 주세요.");
+      if (!q.a2) e.push("A2 문항에 응답해 주세요.");
+    }
+    if (q.s1==="no"){
+      if (!q.b1) e.push("B1 문항에 응답해 주세요.");
+      if (!q.b2) e.push("B2 문항에 응답해 주세요.");
+      if (q.b2===B2_OPTS[6] && !q.b2other.trim()) e.push("B2 기타 이유를 적어 주세요.");
+    }
+    showErr(e); if(!e.length) goNext();
+  });
+  return {el,nav};
+}
+
+function step5(showErr){
+  const f=S.form, pad=createPad();
+  const miss = missingParts({parts:f.parts});
+  const el = h("div",{},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>내용 확인과 서명</span>"}),
+    h("p",{class:"lead",text:"입력한 내용을 확인하고 서명하면 제출됩니다."}),
+    h("dl",{class:"sumlist"},
+      h("dt",{text:"이름 / 학번"}),h("dd",{text:`${f.name.trim()} / ${f.sid.trim()}`}),
+      h("dt",{text:"학과"}),h("dd",{text:f.dept.trim()}),
+      h("dt",{text:"연락처"}),h("dd",{text:f.phone.trim()}),
+      h("dt",{text:"반납 방식"}),h("dd",{text:f.method==="visit"?"현장 방문":"택배 발송"}),
+      h("dt",{text:"기기"}),h("dd",{text:`${modelName(f.model)} · ${f.serial.trim()}`}),
+      h("dt",{text:"부품"}),h("dd",{text:miss.length?`미반납: ${miss.join(", ")}`:"모두 반납"}),
+      h("dt",{text:"기기 상태"}),h("dd",{text:COND[f.condition]+(f.conditionNote.trim()?` (${f.conditionNote.trim()})`:"")}),
+      h("dt",{text:"특이 사항"}),h("dd",{text:f.note.trim()||"없음"})),
+    h("hr"),
+    field("반납 일자", (()=>{const d=h("input",{type:"date",id:"f-date"});d.value=f.date;d.addEventListener("input",()=>f.date=d.value);return d;})(),{req:true}),
+    h("div",{class:"field"},h("label",{class:"req",text:"학생 서명"}), pad.el,
+      h("div",{class:"padbar"},h("span",{text:"본인이 직접 서명해 주세요."}),h("button",{type:"button",class:"btn ghost small",text:"다시 쓰기",onclick:()=>pad.clear()}))),
+    h("label",{class:"opt"},(()=>{const c=h("input",{type:"checkbox",id:"f-agree"});c.checked=f.agree;c.addEventListener("change",()=>f.agree=c.checked);return c;})(),
+      h("span",{text:"위 내용이 사실과 같으며, 대여한 VR 기기를 반납함을 확인합니다."})));
+  const nav = navRow(true,"서명하고 제출",async ()=>{
+    const e=[];
+    if (!f.date) e.push("반납 일자를 입력해 주세요.");
+    if (pad.isEmpty()) e.push("서명란에 서명해 주세요.");
+    if (!f.agree) e.push("확인 문구에 체크해 주세요.");
+    showErr(e); if (e.length || S.busy) return;
+    S.busy=true; const b=$("#nextbtn"); b.disabled=true; b.textContent="제출 중…";
+    try{ await submit(pad.data()); }
+    catch(err){
+      showErr([err&&err.code==="already_confirmed" ? "이미 담당자 확인이 끝난 제출입니다. 수정이 필요하면 담당자에게 문의해 주세요." : "제출하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해 주세요."]);
+      b.disabled=false; b.textContent="서명하고 제출";
+    }
+    S.busy=false;
+  });
+  return {el,nav};
+}
+
+async function submit(sigData){
+  const f=S.form, q=S.survey, now=new Date().toISOString();
+  const rec = {
+    name:f.name.trim(), sid:f.sid.trim(), dept:f.dept.trim(), phone:f.phone.trim(), method:f.method,
+    consent:true, consentAt:now, model:f.model, serial:f.serial.trim(), parts:Object.assign({},f.parts),
+    condition:f.condition, conditionNote:f.conditionNote.trim(), note:f.note.trim(), date:f.date,
+    studentSig:sigData, submittedAt:now, status:"pending", staff:null
+  };
+  const sv = { date:todayISO(), dept:f.dept.trim(), s1:q.s1 };
+  if (q.s1==="yes"){ sv.a1=q.a1; sv.a1other=q.a1other.trim(); sv.a2=q.a2; } else { sv.b1=q.b1; sv.b2=q.b2; sv.b2other=q.b2other.trim(); }
+  sv.c1=q.c1.trim();
+  await api("submit",{rec, survey:sv});
+  lsSet("vrret_me",{sid:rec.sid,pin:digits(rec.phone).slice(-4)});
+  S.editing=false; S.me = Object.assign({_id:rec.sid}, rec); render(); window.scrollTo(0,0);
+}
+
+/* ---------- 제출 내용 조회 ---------- */
+function lookupView(){
+  const err=h("div",{class:"err",hidden:true,role:"alert"});
+  const sid=textInput(()=>"",()=>{},{id:"l-sid",inputmode:"numeric"}), pin=textInput(()=>"",()=>{},{id:"l-pin",inputmode:"numeric",maxlength:"4",placeholder:"예: 5678"});
+  return h("div",{class:"panel"},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>제출 내용 확인</span>"}),
+    h("p",{class:"lead",text:"제출할 때 입력한 학번과 연락처 뒤 4자리를 입력하세요."}),
+    field("학번",sid), field("연락처 뒤 4자리",pin), err,
+    h("div",{class:"btnrow"},
+      h("button",{class:"btn ghost",type:"button",text:"돌아가기",onclick:()=>{S.view="student";render();}}),
+      h("button",{class:"btn grow",type:"button",text:"조회",onclick:async e=>{
+        const b=e.currentTarget; err.hidden=true; b.disabled=true;
+        try{ const j=await api("lookup",{sid:sid.value.trim(),pin:pin.value.trim()});
+          if(!j.rec){ err.hidden=false; err.textContent="일치하는 제출 내용이 없습니다. 학번과 연락처 뒤 4자리를 확인해 주세요."; }
+          else { S.me=j.rec; lsSet("vrret_me",{sid:sid.value.trim(),pin:pin.value.trim()}); S.view="student"; render(); } }
+        catch{ err.hidden=false; err.textContent="조회하지 못했습니다. 인터넷 연결을 확인해 주세요."; }
+        b.disabled=false; }})));
+}
+
+/* ---------- receipt ---------- */
+/* ---------- 처음 화면 / 안내 / 수정 ---------- */
+function goHome(){
+  if (S.editing){ S.editing=false; S.me=S.prevMe||null; }
+  S.view="student"; S.openId=null; S.intro=false; if(!S.me) S.step=1;
+  setupTabs(); render(); window.scrollTo(0,0);
+}
+function editAgain(){
+  const r=S.me; S.prevMe=r;
+  S.form={consent:"yes",name:r.name,sid:r.sid,dept:r.dept,phone:r.phone,method:r.method,model:r.model,serial:r.serial,parts:Object.assign({},r.parts),condition:r.condition,conditionNote:r.conditionNote||"",note:r.note||"",date:r.date||todayISO(),agree:false};
+  S.editing=true; S.me=null; S.step=2; S.intro=false; render(); window.scrollTo(0,0);
+}
+function startOver(){
+  S.prevMe = S.me; freshForm();
+  S.editing = !!S.me; S.me = null; S.step = 1; S.intro = false;
+  render(); window.scrollTo(0,0);
+}
+function introView(){
+  const locked = !!(S.me && S.me.status==="confirmed");
+  return h("div",{class:"panel enter intro-tone"},
+    h("h2",{text:"반납 안내"}),
+    h("dl",{class:"info"},
+      h("dt",{text:"반납 대상"}),h("dd",{text:"2027년 2월 졸업 예정자"}),
+      h("dt",{text:"반납 기기"}),h("dd",{text:"VR 본체, 컨트롤러(2개), 충전기, 케이블"}),
+      h("dt",{text:"반납 장소"}),h("dd",{text:"학생회관 1층 커리어라운지 상담실 B (카페 맞은편)"}),
+      h("dt",{text:"반납 일정"}),h("dd",{text:"2026년 12월 10일(목) ~ 12월 11일(금) 11:00 ~ 16:00"}),
+      h("dt",{text:"택배 반납"}),h("dd",{},"택배비 본인 부담",h("br"),"주소: 포항시 남구 청암로 77 무은재기념관 109호 교육혁신센터 메타버시티교육추진단",h("br"),"전화: 010-7121-4019")),
+    h("h3",{text:"진행 순서"}),
+    h("ol",{class:"flow"},h("li",{text:"이 화면에서 확인증 작성, 설문, 본인 서명"}),h("li",{text:"기기 반납 (현장 담당자가 외관·성능·시리얼 번호 점검)"}),h("li",{text:"담당자 서명 후 확인 완료 화면과 확인증 이미지 수령"})),
+    h("h3",{text:"유의 사항"}),
+    h("div",{class:"note",text:"기기(VR 본체, 컨트롤러, 충전기, 케이블)가 파손된 경우 유상수리 비용에 대한 배상 책임은 없습니다."}),
+    h("div",{class:"note warn",text:"서약서에 따라 기기(VR 본체, 컨트롤러, 충전기)를 분실한 경우 동일 제품으로 배상해야 합니다. 충전기·케이블은 C to C 타입이면 동일 제품이 아니어도 됩니다."}),
+    ...(locked?[h("div",{class:"note warn",text:"담당자 확인이 끝난 제출이라 새로 작성할 수 없습니다. 수정이 필요하면 담당자에게 문의해 주세요."})]:[]),
+    h("div",{class:"btnrow"},
+      h("button",{class:"btn grow",type:"button",text:"새로 시작",disabled:locked,onclick:startOver}),
+      S.me ? h("button",{class:"btn ghost grow",type:"button",text:"제출내용으로 돌아가기",onclick:()=>{S.intro=false;render();window.scrollTo(0,0);}}) : null));
+}
+
+function sigBox(label, src){
+  return h("div",{class:"sigbox"},h("small",{text:label}), src ? h("img",{src,alt:label}) : h("div",{class:"empty",text:"담당자 확인 후 표시"}));
+}
+function receiptView(r){
+  const st = r.staff, miss=missingParts(r);
+  const confirmed = r.status==="confirmed";
+  return h("div",{class:"receipt"},
+    h("div",{class:"rh"},
+      h("div",{},h("b",{text:"VR HMD 기기 반납 확인증"}),h("span",{text:"포스텍 메타버시티교육추진단"})),
+      h("div",{style:"text-align:right"},h("span",{class:"pill "+(confirmed?"ok":"wait"),text:confirmed?"담당자 확인 완료":"담당자 확인 대기"}),
+        h("div",{},h("span",{text:"라벨 번호 "+(st&&st.label?st.label:LABEL_PREFIX+"—")})))),
+    h("div",{class:"rb"},
+      h("dl",{class:"sumlist"},
+        h("dt",{text:"이름 / 학번"}),h("dd",{text:`${r.name} / ${r.sid}`}),
+        h("dt",{text:"학과"}),h("dd",{text:r.dept}),
+        h("dt",{text:"연락처"}),h("dd",{text:r.phone}),
+        h("dt",{text:"반납 방식"}),h("dd",{text:r.method==="parcel"?"택배 발송":"현장 방문"}),
+        h("dt",{text:"반납 기기"}),h("dd",{text:`${modelName(r.model)} · ${r.serial}${st&&st.serial&&st.serial!==r.serial?` (담당자 확인: ${st.serial})`:""}`}),
+        h("dt",{text:"기기 부품"}),h("dd",{text:PARTS.map(([k,l])=>`${l} ${(r.parts||{})[k]?"반납":"미반납"}`).join(" · ")}),
+        h("dt",{text:"기기 상태"}),h("dd",{text:COND[r.condition]+(r.conditionNote?` (${r.conditionNote})`:"")}),
+        h("dt",{text:"특이 사항"}),h("dd",{text:r.note||"없음"}),
+        h("dt",{text:"반납 일자"}),h("dd",{text:kDate(r.date)})),
+      miss.length?h("div",{class:"note warn",style:"margin-top:12px",text:`미반납 부품(${miss.join(", ")})은 서약서에 따라 동일 제품으로 배상 대상이 될 수 있습니다.`}):null,
+      h("div",{class:"sigrow"},sigBox("학생 서명",r.studentSig),sigBox("담당자 서명",st&&st.sig)),
+      h("p",{style:"margin:12px 0 0;font-size:12.5px;color:var(--muted)",text:"포항공과대학교에서 대여한 VR 기기의 반납 사실을 증명합니다."})));
+}
+
+function doneView(){
+  const r=S.me, confirmed=r.status==="confirmed";
+  const wrap=h("div",{});
+  wrap.append(h("div",{class:"panel",style:"margin-bottom:14px"},
+    h("div",{class:"done-ico"+(confirmed?"":" wait"),"aria-hidden":"true",text:confirmed?"✓":"…"}),
+    h("h2",{text:confirmed?"반납 확인이 완료되었습니다":"제출이 완료되었습니다"}),
+    confirmed
+      ? h("p",{class:"lead",text:"담당자 서명까지 끝난 확인증입니다. 아래 버튼으로 이미지를 저장해 보관해 주세요."})
+      : h("div",{},
+          h("p",{class:"lead",text:r.method==="parcel"?"기기를 택배로 보낸 뒤, '제출내용저장' 버튼으로 저장한 확인증 이미지를 p-meta@postech.ac.kr 로 제출해 주세요. 담당자가 기기를 받아 점검하면 상태가 '확인 완료'로 바뀝니다.":"반납 일정에 맞춰 기기를 가지고 학생회관 1층 커리어라운지 상담실 B로 방문해 주세요. 담당자가 점검하고 서명하면 상태가 '확인 완료'로 바뀝니다."}),
+          h("p",{class:"lead",text:"담당자에게 학번을 알려 주세요. 상태가 바뀌었는지는 '새로고침'으로 확인할 수 있습니다."})),
+    h("div",{class:"btnrow"},
+      h("button",{class:"btn",type:"button",text:"제출내용저장",onclick:async e=>{
+        const b=e.currentTarget; b.disabled=true; try{ await saveReceiptPng(r); }catch{ b.textContent="저장하지 못했습니다. 다시 시도"; } b.disabled=false; }}),
+      confirmed ? null : h("button",{class:"btn ghost",type:"button",text:"새로고침",onclick:async e=>{
+        const b=e.currentTarget; b.disabled=true; const saved=lsGet("vrret_me"); try{ const j=await api("lookup",saved||{}); if(j.rec){S.me=j.rec;} render(); }catch{ b.disabled=false; } }}),
+      h("button",{class:"btn ghost",type:"button",text:"첫 화면",onclick:()=>{S.intro=true;render();window.scrollTo(0,0);}}),
+      confirmed ? null : h("button",{class:"btn ghost",type:"button",text:"내용수정",onclick:editAgain}),
+      h("button",{class:"btn ghost",type:"button",text:"이 기기에서 기록 지우기",onclick:()=>{ lsSet("vrret_me",null); S.me=null; freshForm(); S.step=1; render(); window.scrollTo(0,0); }})),
+    h("p",{class:"hint",style:"font-size:12.5px;color:var(--muted);margin:12px 0 0",text:"공용 기기를 사용했다면 '이 기기에서 기록 지우기'를 눌러 주세요. 제출한 내용은 삭제되지 않습니다."})));
+  wrap.append(receiptView(r));
+  return wrap;
+}
+
+/* ---------- receipt PNG ---------- */
+function loadImg(src){ return new Promise(res=>{ if(!src) return res(null); const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; }); }
+async function saveReceiptPng(r){
+  try{ await document.fonts.load('700 28px "Noto Sans KR"'); await document.fonts.load('400 22px "Noto Sans KR"'); }catch{}
+  const [s1,s2] = await Promise.all([loadImg(r.studentSig), loadImg(r.staff&&r.staff.sig)]);
+  const W=900, P=48, F='"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif';
+  const c=document.createElement("canvas"); c.width=W; c.height=1500; const x=c.getContext("2d");
+  x.fillStyle="#fff"; x.fillRect(0,0,W,1500); x.fillStyle="#000000"; x.textBaseline="top";
+  const wrap=(t,w)=>{ const out=[]; let line=""; for(const ch of String(t)){ if(x.measureText(line+ch).width>w){out.push(line);line=ch;} else line+=ch; } out.push(line); return out; };
+  let y=P; x.font=`700 32px ${F}`; x.textAlign="center"; x.fillText("포항공과대학교 VR HMD 기기 반납 확인증",W/2,y); y+=52;
+  x.font=`400 20px ${F}`; x.fillStyle="#444444"; x.fillText("라벨 번호 : "+((r.staff&&r.staff.label)||LABEL_PREFIX), W/2, y); y+=44; x.textAlign="left";
+  const st=r.staff;
+  const rows=[
+    ["학생 정보",[`이름 ${r.name}    학번 ${r.sid}`,`학과 ${r.dept}    연락처 ${r.phone}`]],
+    ["반납 기기",[`${modelName(r.model)}    시리얼 ${(st&&st.serial)||r.serial}`]],
+    ["기기 부품",[PARTS.map(([k,l])=>`${l} ${(r.parts||{})[k]?"반납":"미반납"}`).join("   ")]],
+    ["기기 상태",[COND[r.condition]+(r.conditionNote?` (${r.conditionNote})`:"")]],
+    ["특이 사항",[r.note||"없음"]],
+    ["반납 방식",[r.method==="parcel"?"택배 발송":"현장 방문"]],
+    ["반납 일자",[kDate(r.date)]]
+  ];
+  const lw=170, vw=W-2*P-lw-28; x.strokeStyle="#cfcfcf"; x.lineWidth=1.5;
+  x.beginPath(); x.moveTo(P,y); x.lineTo(W-P,y); x.stroke();
+  for(const [k,vals] of rows){
+    x.font=`400 23px ${F}`; const lines=vals.flatMap(v=>wrap(v,vw)); const rh=Math.max(60,lines.length*34+26);
+    x.fillStyle="#444444"; x.fillText(k,P+10,y+(rh-28)/2); x.fillStyle="#000000";
+    lines.forEach((l,i)=>x.fillText(l,P+lw+10,y+13+i*34)); y+=rh; x.beginPath(); x.moveTo(P,y); x.lineTo(W-P,y); x.stroke();
+  }
+  y+=34; const bw=(W-2*P-24)/2, bh=190;
+  [["학생 서명",s1,P],["담당자 서명",s2,P+bw+24]].forEach(([l,img,bx])=>{
+    x.strokeStyle="#cfcfcf"; x.strokeRect(bx,y,bw,bh); x.fillStyle="#444444"; x.font=`400 19px ${F}`; x.fillText(l,bx+14,y+12);
+    if(img){ const k=Math.min((bw-28)/img.width,(bh-56)/img.height); x.drawImage(img,bx+14,y+44,img.width*k,img.height*k); }
+    else { x.fillStyle="#888888"; x.fillText("담당자 확인 대기",bx+14,y+bh/2); }
+  });
+  y+=bh+36; x.fillStyle="#000000"; x.font=`400 22px ${F}`; x.textAlign="center";
+  x.fillText("포항공과대학교에서 대여한 VR 기기의 반납 사실을 증명합니다.",W/2,y); y+=36; x.fillText("포스텍 메타버시티교육추진단",W/2,y); y+=38;
+  x.font=`500 20px ${F}`; x.fillStyle = r.status==="confirmed" ? "#1f7a4f" : "#96600a";
+  x.fillText(r.status==="confirmed"?"담당자 확인 완료":"담당자 확인 대기 (제출 내용 사본)",W/2,y); y+=P+20;
+  const out=document.createElement("canvas"); out.width=W; out.height=Math.ceil(y); out.getContext("2d").drawImage(c,0,0);
+  const blob=await new Promise(res=>out.toBlob(res,"image/png"));
+  download(`VR반납확인증_${r.sid}.png`, blob);
+}
+
+/* ---------- staff ---------- */
+function staffLogin(){
+  const err=h("div",{class:"err",hidden:true,role:"alert"});
+  const key=h("input",{type:"password",id:"s-key",autocomplete:"current-password"});
+  const go=async e=>{ const b=$("#s-go"); err.hidden=true; b.disabled=true; S.key=key.value;
+    try{ await loadStaff(); ssSet("vrret_key",S.key); S.view="staff"; setupTabs(); render(); }
+    catch(x){ S.key=null; err.hidden=false; err.textContent = x&&x.code==="unauthorized" ? "담당자 키가 올바르지 않습니다." : "불러오지 못했습니다. 인터넷 연결과 서버 설정을 확인해 주세요."; b.disabled=false; } };
+  key.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
+  return h("div",{class:"panel"},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>담당자 로그인</span>"}),
+    h("p",{class:"lead",text:"담당자에게 전달된 키를 입력하세요."}), field("담당자 키",key), err,
+    h("div",{class:"btnrow"},h("button",{class:"btn ghost",type:"button",text:"돌아가기",onclick:()=>{S.view="student";setupTabs();render();}}),h("button",{class:"btn grow",type:"button",id:"s-go",text:"로그인",onclick:go})));
+}
+function staffView(){
+  const wrap=h("div",{});
+  if (S.openId){ const r=S.all.find(x=>x._id===S.openId); if (r) return staffDetail(r); S.openId=null; }
+  wrap.append(h("div",{class:"tabs",style:"margin-bottom:14px;flex-wrap:wrap"},
+    ...[["returns","반납 현황"],["survey","설문 결과"]].map(([k,l])=>h("button",{type:"button","aria-pressed":String(S.staffTab===k),text:l,onclick:()=>{S.staffTab=k;render();}})),
+    h("button",{type:"button",text:"새로고침",onclick:async e=>{ e.currentTarget.disabled=true; try{await loadStaff();}catch{} render(); }}),
+    h("button",{type:"button",text:"로그아웃",onclick:()=>{S.key=null;S.all=[];S.surveys=[];ssSet("vrret_key",null);S.view="student";setupTabs();render();}})));
+  wrap.append(S.staffTab==="returns" ? staffList() : staffSurvey());
+  return wrap;
+}
+function csv(rows){ return "﻿"+rows.map(r=>r.map(v=>`"${String(v==null?"":v).replace(/"/g,'""')}"`).join(",")).join("\r\n"); }
+function exportCsv(name, rows){ download(name, new Blob([csv(rows)],{type:"text/csv;charset=utf-8"})); }
+function staffList(){
+  const all=S.all, wrap=h("div",{});
+  const pending=all.filter(r=>r.status!=="confirmed").length, done=all.length-pending, issues=all.filter(hasIssue).length;
+  wrap.append(h("div",{class:"panel",style:"margin-bottom:14px"},
+    h("div",{class:"cardhead",html:PIN_SVG+"<span>처리 현황</span>"}),
+    h("div",{class:"todo"},...[["제출",all.length],["확인 대기",pending],["확인 완료",done],["부품·상태 이상",issues]].map(([l,v])=>h("div",{},h("span",{text:l}),h("span",{},h("b",{text:String(v)})," 건"))))));
+  const list = h("div",{});
+  const draw=()=>{
+    const q=S.query.trim().toLowerCase();
+    const rows=all.filter(r=>(S.filter==="all"||(S.filter==="pending"&&r.status!=="confirmed")||(S.filter==="confirmed"&&r.status==="confirmed")||(S.filter==="issue"&&hasIssue(r)))
+      && (!q||[r.name,r.sid,r.serial,r.dept].some(v=>String(v||"").toLowerCase().includes(q)))).sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)));
+    list.replaceChildren();
+    if(!rows.length){ list.append(h("div",{class:"tablewrap"},h("div",{class:"empty-state",text:all.length?"조건에 맞는 제출이 없습니다.":"아직 제출된 반납 확인증이 없습니다. 학생이 제출하면 여기에 나타납니다."}))); return; }
+    const tb=h("tbody",{});
+    rows.forEach(r=>{
+      const flags=[]; if(missingParts(r).length) flags.push("부품 미반납"); if(r.condition!=="ok") flags.push(COND[r.condition]);
+      tb.append(h("tr",{tabindex:"0",onclick:()=>{S.openId=r._id;render();window.scrollTo(0,0);},onkeydown:e=>{if(e.key==="Enter"){S.openId=r._id;render();}}},
+        h("td",{text:kTime(r.submittedAt)}),h("td",{text:r.name}),h("td",{class:"num",text:r.sid}),h("td",{text:r.dept}),
+        h("td",{text:modelName(r.model).replace("Meta ","")}),h("td",{class:"num",text:r.serial}),h("td",{text:r.method==="parcel"?"택배":"방문"}),
+        h("td",{},flags.length?h("span",{class:"pill bad",text:flags.join(", ")}):h("span",{class:"pill mute",text:"이상 없음"})),
+        h("td",{},h("span",{class:"pill "+(r.status==="confirmed"?"ok":"wait"),text:r.status==="confirmed"?"확인 완료":"대기"}))));
+    });
+    list.append(h("div",{class:"tablewrap"},h("table",{},h("thead",{},h("tr",{},...["제출","이름","학번","학과","모델","시리얼","방식","점검 이상","상태"].map(t=>h("th",{text:t})))),tb)));
+  };
+  const search=h("input",{type:"text",placeholder:"이름·학번·시리얼 검색","aria-label":"검색",id:"s-q"}); search.value=S.query; search.addEventListener("input",()=>{S.query=search.value;draw();});
+  const chips=h("div",{class:"chips"});
+  [["all","전체"],["pending","확인 대기"],["confirmed","확인 완료"],["issue","이상"]].forEach(([k,l])=>chips.append(h("button",{type:"button",class:"chip","aria-pressed":String(S.filter===k),text:l,onclick:e=>{S.filter=k;[...chips.children].forEach(c=>c.setAttribute("aria-pressed","false"));e.currentTarget.setAttribute("aria-pressed","true");draw();}})));
+  wrap.append(h("div",{class:"toolbar"},chips,search,h("button",{class:"btn ghost small",type:"button",text:"CSV로 저장",onclick:()=>exportCsv(`VR반납현황_${todayISO()}.csv`,[["제출시각","상태","이름","학번","학과","연락처","반납방식","모델","시리얼","HMD","컨트롤러","충전기","케이블","기기상태","상태설명","특이사항","반납일자","라벨번호","확인시각","담당자메모"]].concat(all.map(r=>[r.submittedAt,r.status==="confirmed"?"확인완료":"대기",r.name,r.sid,r.dept,r.phone,r.method==="parcel"?"택배":"방문",modelName(r.model),(r.staff&&r.staff.serial)||r.serial,...PARTS.map(([k])=>(r.parts||{})[k]?"반납":"미반납"),COND[r.condition],r.conditionNote,r.note,r.date,r.staff&&r.staff.label,r.staff&&r.staff.at,r.staff&&r.staff.note])))})));
+  wrap.append(list); draw();
+  return wrap;
+}
+function nextLabel(){
+  let mx=0; S.all.forEach(r=>{ const m=r.staff&&r.staff.label&&String(r.staff.label).match(/(\d+)$/); if(m) mx=Math.max(mx,+m[1]); });
+  return LABEL_PREFIX+String(mx+1).padStart(3,"0");
+}
+function staffDetail(r){
+  const wrap=h("div",{}), confirmed=r.status==="confirmed", st=r.staff||{};
+  wrap.append(h("button",{class:"btn ghost small back",type:"button",text:"← 목록으로",onclick:()=>{S.openId=null;render();}}));
+  wrap.append(h("div",{class:"grid2",style:"align-items:start;gap:16px"}, receiptView(r), (()=>{
+    const p=h("div",{class:"panel"});
+    const err=h("div",{class:"err",hidden:true,role:"alert"});
+    const fail=m=>{ err.hidden=false; err.textContent=m; };
+    const chk={ exterior:!!(st.checks&&st.checks.exterior), performance:!!(st.checks&&st.checks.performance), serial:!!(st.checks&&st.checks.serial) };
+    const recv=Object.assign({}, st.parts||r.parts||{});
+    const cl={ serial:st.serial||r.serial, label:st.label||nextLabel(), note:st.note||"" };
+    const pad=createPad();
+    const act=async(fn,errMsg)=>{ try{ await fn(); await loadStaff(); S.openId=null; render(); }catch(x){ fail(errMsg+(x&&x.code?` (${x.code})`:"")); } };
+    p.append(h("div",{class:"cardhead",html:PIN_SVG+`<span>${confirmed?"담당자 확인 내용":"담당자 점검"}</span>`}),
+      ...(r.method==="parcel"?[h("div",{class:"note",text:"택배 반납입니다. 기기를 수령해 점검한 뒤 처리해 주세요."})]:[]),
+      h("h3",{text:"점검 사항"}),
+      h("div",{class:"checks"},...[["exterior","외관 상태: VR 본체·컨트롤러·충전기의 물리적 손상 확인"],["performance","기기 성능: 렌즈·디스플레이 화면 표시 상태 확인"],["serial","시리얼 넘버: 기기와 일치함을 확인"]].map(([k,l])=>{
+        const i=h("input",{type:"checkbox"}); i.checked=chk[k]; i.disabled=confirmed; i.addEventListener("change",()=>chk[k]=i.checked); return h("label",{class:"opt"},i,h("span",{text:l})); })),
+      h("div",{class:"field",style:"margin-top:14px"},h("label",{text:"시리얼 번호 (수정 가능)"}),(()=>{const i=textInput(()=>cl.serial,v=>cl.serial=v.toUpperCase(),{id:"d-serial"}); i.disabled=confirmed; return i;})()),
+      h("div",{class:"field"},h("label",{text:"수령한 부품"}),(()=>{const b=h("div",{class:"opts inline"}); PARTS.forEach(([k,l])=>{const i=h("input",{type:"checkbox"});i.checked=!!recv[k];i.disabled=confirmed;i.addEventListener("change",()=>recv[k]=i.checked);b.append(h("label",{class:"opt"},i,h("span",{text:l})));}); return b;})()),
+      h("div",{class:"grid2"},
+        h("div",{class:"field"},h("label",{text:"라벨 번호"}),(()=>{const i=textInput(()=>cl.label,v=>cl.label=v,{id:"d-label"}); i.disabled=confirmed; return i;})()),
+        h("div",{class:"field"},h("label",{text:"메모 (선택)"}),(()=>{const i=textInput(()=>cl.note,v=>cl.note=v,{id:"d-note"}); i.disabled=confirmed; return i;})())));
+    if (!confirmed){
+      p.append(h("div",{class:"field"},h("label",{class:"req",text:"담당자 서명"}),pad.el,h("div",{class:"padbar"},h("span",{text:""}),h("button",{type:"button",class:"btn ghost small",text:"다시 쓰기",onclick:()=>pad.clear()}))));
+      p.append(err, h("div",{class:"btnrow"},h("button",{class:"btn grow",type:"button",text:"확인 완료 처리",onclick:async e=>{
+        err.hidden=true;
+        if(!(chk.exterior&&chk.performance&&chk.serial)) return fail("점검 사항 3가지를 모두 확인해 주세요.");
+        if(cl.serial.trim().length<6) return fail("시리얼 번호를 입력해 주세요.");
+        if(!cl.label.trim()) return fail("라벨 번호를 입력해 주세요.");
+        if(pad.isEmpty()) return fail("담당자 서명이 필요합니다.");
+        const b=e.currentTarget; b.disabled=true; b.textContent="처리 중…";
+        await act(()=>api("staffConfirm",{key:S.key,sid:r._id,staff:{checks:chk,serial:cl.serial.trim(),parts:recv,label:cl.label.trim(),note:cl.note.trim(),sig:pad.data(),at:new Date().toISOString()}}),"저장하지 못했습니다. 다시 시도해 주세요.");
+        b.disabled=false; b.textContent="확인 완료 처리";
+      }})));
+    } else {
+      p.append(err,h("div",{class:"btnrow"},
+        h("button",{class:"btn ghost",type:"button",text:"제출내용저장",onclick:()=>saveReceiptPng(r).catch(()=>{})}),
+        h("button",{class:"btn ghost",type:"button",text:"확인 취소",onclick:()=>act(()=>api("staffRevert",{key:S.key,sid:r._id}),"취소하지 못했습니다.")})));
+    }
+    const del=h("button",{class:"btn danger small",type:"button",text:"이 제출 삭제"});
+    let armed=false; del.addEventListener("click",()=>{ if(!armed){armed=true;del.textContent="정말 삭제하려면 한 번 더 누르세요";setTimeout(()=>{armed=false;del.textContent="이 제출 삭제";},4000);return;}
+      act(()=>api("staffDelete",{key:S.key,sid:r._id}),"삭제하지 못했습니다."); });
+    p.append(h("hr"),h("p",{class:"lead",style:"font-size:13px",text:"잘못 제출한 경우 삭제하면 학생이 다시 작성할 수 있습니다."}),del);
+    return p;
+  })()));
+  return wrap;
+}
+
+/* ---------- staff: survey results ---------- */
+function barList(items,total){
+  return h("div",{class:"bars"},...items.map(([t,n])=>h("div",{class:"barrow"},h("div",{class:"t",text:t}),h("div",{class:"track"},h("i",{style:`width:${total?Math.round(n/total*100):0}%`})),h("div",{class:"v",text:`${n}명 (${total?Math.round(n/total*100):0}%)`}))));
+}
+function staffSurvey(){
+  const sv=S.surveys, wrap=h("div",{});
+  const users=sv.filter(x=>x.s1==="yes"), non=sv.filter(x=>x.s1==="no");
+  wrap.append(h("div",{class:"toolbar"},h("span",{class:"lead",style:"margin:0",text:`응답 ${sv.length}건`}),
+    h("button",{class:"btn ghost small",type:"button",text:"CSV로 저장",onclick:()=>exportCsv(`VR설문응답_${todayISO()}.csv`,[["응답일","학과","S1 사용경험","A1 용도","A1 기타","A2 흥미(1-5)","B1 기회","B2 이유","B2 기타","C1 의견"]].concat(sv.map(x=>[x.date,x.dept,x.s1==="yes"?"있다":"없다",(x.a1||[]).join(" / "),x.a1other,x.a2,x.b1,x.b2,x.b2other,x.c1])))})));
+  if(!sv.length){ wrap.append(h("div",{class:"tablewrap"},h("div",{class:"empty-state",text:"아직 설문 응답이 없습니다. 학생이 제출하면 집계가 나타납니다."}))); return wrap; }
+  const q=(id,title,body)=>h("div",{class:"qcard"},h("h4",{},h("span",{class:"qid",text:id}),title),body);
+  wrap.append(q("S1","VR 기기 사용 경험", barList([["있다",users.length],["없다",non.length]],sv.length)));
+  if(users.length){
+    const cnt={}; users.forEach(x=>(x.a1||[]).forEach(o=>cnt[o]=(cnt[o]||0)+1));
+    wrap.append(q("A1","주된 사용 용도 (복수 응답, 사용 경험자 기준)", barList(A1_OPTS.map(o=>[o,cnt[o]||0]),users.length)));
+    const sc=[1,2,3,4,5].map(n=>[`${n}점`,users.filter(x=>x.a2===n).length]), avg=users.reduce((a,x)=>a+(x.a2||0),0)/users.length;
+    wrap.append(q("A2","접근하기 어려운 것을 경험할 수 있어 흥미로웠다 (평균 "+avg.toFixed(2)+"점)", barList(sc,users.length)));
+  }
+  if(non.length){
+    wrap.append(q("B1","사용할 기회가 있었는가 (미사용자 기준)", barList(B1_OPTS.map(o=>[o,non.filter(x=>x.b1===o).length]),non.length)));
+    wrap.append(q("B2","사용하지 않은 가장 큰 이유", barList(B2_OPTS.map(o=>[o,non.filter(x=>x.b2===o).length]),non.length)));
+    const oth=non.filter(x=>x.b2other).map(x=>x.b2other);
+    if(oth.length) wrap.append(q("B2 기타","직접 기재한 이유",h("ul",{class:"comments"},...oth.map(t=>h("li",{text:t})))));
+  }
+  const cm=sv.filter(x=>x.c1);
+  wrap.append(q("C1",`자유 의견 (${cm.length}건)`, cm.length?h("ul",{class:"comments"},...cm.map(x=>h("li",{text:`${x.s1==="yes"?"[사용] ":"[미사용] "}${x.c1}`}))):h("p",{class:"lead",text:"작성된 의견이 없습니다."})));
+  return wrap;
+}
+
+boot();
+})();
+</script>
+</body>
+</html>
