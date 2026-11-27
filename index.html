@@ -239,7 +239,7 @@ label.opt input[type=checkbox]:checked{border-color:var(--accent);background:#ff
 /* ===================== 배포 설정 (여기만 수정하세요) ===================== */
 const CONFIG = {
   // Google Apps Script 웹 앱 URL(…/exec). 비워 두면 '체험 모드'로, 이 브라우저에만 저장됩니다.
-  API_URL: "https://script.google.com/macros/s/AKfycbzVDFth3Z35zkytMoo4ORlzK22-Qx5OvVWAr00JZy-h1QG9iFKK1hn_wW_EZ5spMn_w9w/exec",
+  API_URL: "https://script.google.com/macros/s/AKfycbzXDcbLUWTYAYj1G8luslTGqg5jw3VboB5-kGd--U9NFBR0tVLet1EWUp2nbJMuIusU/exec",
   // 라벨 번호 앞부분 (예: 202612-001)
   LABEL_PREFIX: "202612-",
   // 체험 모드에서만 쓰는 담당자 키. 실제 배포에서는 서버(Apps Script)의 STAFF_KEY가 적용됩니다.
@@ -946,7 +946,7 @@ function staffDetail(r){
     const fail=m=>{ err.hidden=false; err.textContent=m; };
     const chk={ exterior:!!(st.checks&&st.checks.exterior), performance:!!(st.checks&&st.checks.performance), serial:!!(st.checks&&st.checks.serial) };
     const recv=Object.assign({}, st.parts||r.parts||{});
-    const cl={ serial:st.serial||r.serial, label:st.label||nextLabel(), note:st.note||"" };
+    const cl={ serial:st.serial||r.serial, label:st.label||"", note:st.note||"" };
     const pad=createPad();
     const act=async(fn,errMsg)=>{ try{ await fn(); await loadStaff(); S.openId=null; render(); }catch(x){ fail(errMsg+(x&&x.code?` (${x.code})`:"")); } };
     p.append(h("div",{class:"cardhead",html:PIN_SVG+`<span>${confirmed?"담당자 확인 내용":"담당자 점검"}</span>`}),
@@ -957,7 +957,7 @@ function staffDetail(r){
       h("div",{class:"field",style:"margin-top:14px"},h("label",{text:"시리얼 번호 (수정 가능)"}),(()=>{const i=textInput(()=>cl.serial,v=>cl.serial=v.toUpperCase(),{id:"d-serial"}); i.disabled=confirmed; return i;})()),
       h("div",{class:"field"},h("label",{text:"수령한 부품"}),(()=>{const b=h("div",{class:"opts inline"}); PARTS.forEach(([k,l])=>{const i=h("input",{type:"checkbox"});i.checked=!!recv[k];i.disabled=confirmed;i.addEventListener("change",()=>recv[k]=i.checked);b.append(h("label",{class:"opt"},i,h("span",{text:l})));}); return b;})()),
       h("div",{class:"grid2"},
-        h("div",{class:"field"},h("label",{text:"라벨 번호"}),(()=>{const i=textInput(()=>cl.label,v=>cl.label=v,{id:"d-label"}); i.disabled=confirmed; return i;})()),
+        h("div",{class:"field"},h("label",{class:confirmed?"":"req",text:"라벨 번호 (직접 입력)"}),(()=>{const i=textInput(()=>cl.label,v=>cl.label=v,{id:"d-label",placeholder:"예: "+LABEL_PREFIX+"001"}); i.disabled=confirmed; return i;})()),
         h("div",{class:"field"},h("label",{text:"메모 (선택)"}),(()=>{const i=textInput(()=>cl.note,v=>cl.note=v,{id:"d-note"}); i.disabled=confirmed; return i;})())));
     if (!confirmed){
       p.append(h("div",{class:"field"},h("label",{class:"req",text:"담당자 서명"}),pad.el,h("div",{class:"padbar"},h("span",{text:""}),h("button",{type:"button",class:"btn ghost small",text:"다시 쓰기",onclick:()=>pad.clear()}))));
@@ -965,7 +965,8 @@ function staffDetail(r){
         err.hidden=true;
         if(!(chk.exterior&&chk.performance&&chk.serial)) return fail("점검 사항 3가지를 모두 확인해 주세요.");
         if(cl.serial.trim().length<6) return fail("시리얼 번호를 입력해 주세요.");
-        if(!cl.label.trim()) return fail("라벨 번호를 입력해 주세요.");
+        if(!cl.label.trim()) return fail("기기에 붙인 라벨 번호를 입력해 주세요.");
+        if(S.all.some(x=>x._id!==r._id && x.staff && x.staff.label && String(x.staff.label).trim().toLowerCase()===cl.label.trim().toLowerCase())) return fail("이미 다른 제출에 사용된 라벨 번호입니다. 번호를 확인해 주세요.");
         if(pad.isEmpty()) return fail("담당자 서명이 필요합니다.");
         const b=e.currentTarget; b.disabled=true; b.textContent="처리 중…";
         await act(()=>api("staffConfirm",{key:S.key,sid:r._id,staff:{checks:chk,serial:cl.serial.trim(),parts:recv,label:cl.label.trim(),note:cl.note.trim(),sig:pad.data(),at:new Date().toISOString()}}),"저장하지 못했습니다. 다시 시도해 주세요.");
