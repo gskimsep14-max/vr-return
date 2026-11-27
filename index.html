@@ -232,7 +232,6 @@ label.opt input[type=checkbox]:checked{border-color:var(--accent);background:#ff
   <main id="main"></main>
   <div class="footnote">
     <span>문의: 포스텍 메타버시티교육추진단 <span class="copy">p-meta@postech.ac.kr</span> · <span class="copy">010-7121-4019</span></span>
-    <button type="button" class="linkbtn" id="stafflink">담당자 로그인</button>
   </div>
 </div></div>
 
@@ -240,7 +239,7 @@ label.opt input[type=checkbox]:checked{border-color:var(--accent);background:#ff
 /* ===================== 배포 설정 (여기만 수정하세요) ===================== */
 const CONFIG = {
   // Google Apps Script 웹 앱 URL(…/exec). 비워 두면 '체험 모드'로, 이 브라우저에만 저장됩니다.
-  API_URL: "",
+  API_URL: "https://script.google.com/macros/s/AKfycby7jkNqN6dqTGX32MVh7Egu42zePgu4e5QXspvTQJED8tEe1IcvMkOPbzSNqR59jvRfig/exec",
   // 라벨 번호 앞부분 (예: 202612-001)
   LABEL_PREFIX: "202612-",
   // 체험 모드에서만 쓰는 담당자 키. 실제 배포에서는 서버(Apps Script)의 STAFF_KEY가 적용됩니다.
@@ -403,22 +402,30 @@ const main = $("#main");
 async function boot(){
   const ht=$(".hero-text"); ht.setAttribute("role","button"); ht.setAttribute("tabindex","0"); ht.setAttribute("aria-label","첫 화면"); ht.style.cursor="pointer"; ht.addEventListener("click",goHome); ht.addEventListener("keydown",e=>{ if(e.key==="Enter") goHome(); });
   if (DEMO) $("#banner").append(h("div",{class:"banner",text:"체험 모드입니다. 입력한 내용은 이 브라우저에만 저장되며 다른 사람에게 전달되지 않습니다. (담당자 키: "+CONFIG.DEMO_STAFF_KEY+")"}));
-  $("#stafflink").addEventListener("click",async()=>{
-    S.view = "staffLogin";
-    if (S.key){ try{ await loadStaff(); S.view="staff"; }catch{ S.key=null; ssSet("vrret_key",null); } }
-    setupTabs(); render(); window.scrollTo(0,0); });
+  window.addEventListener("hashchange",()=>{ routeHash(); });
   const saved = lsGet("vrret_me");
   if (saved){ try{ const j=await api("lookup",saved); S.me=j.rec; if(!j.rec) lsSet("vrret_me",null); }catch{} }
   const k=ssGet("vrret_key"); if (k){ S.key=k; }
+  await routeHash();
   render();
   setInterval(async()=>{ if (S.view==="staff" && S.key && !S.openId && !document.hidden){ const before=JSON.stringify(S.all); try{ await loadStaff(); if (JSON.stringify(S.all)!==before) render(); }catch{} } }, 30000);
 }
 async function loadStaff(){ const j=await api("staffList",{key:S.key}); S.all=j.returns||[]; S.surveys=j.surveys||[]; }
+function clearHash(){ try{ if (location.hash) history.replaceState(null,"",location.pathname+location.search); }catch{} }
+async function routeHash(){
+  if (location.hash==="#staff"){
+    S.view="staffLogin";
+    if (S.key){ try{ await loadStaff(); S.view="staff"; }catch{ S.key=null; ssSet("vrret_key",null); } }
+    setupTabs(); render(); window.scrollTo(0,0);
+  } else if (S.view==="staff" || S.view==="staffLogin"){
+    S.view="student"; setupTabs(); render();
+  }
+}
 function setupTabs(){
   const nav=$("#tabs"); nav.replaceChildren();
   if (S.view==="staff" || S.view==="student" && S.key){
     nav.hidden=false;
-    [["student","학생 화면"],["staff","담당자"]].forEach(([v,l])=>nav.append(h("button",{type:"button","aria-pressed":String(S.view===v),text:l,onclick:()=>{S.view=v;S.openId=null;setupTabs();render();}})));
+    [["student","학생 화면"],["staff","담당자"]].forEach(([v,l])=>nav.append(h("button",{type:"button","aria-pressed":String(S.view===v),text:l,onclick:()=>{if(v==="student") clearHash(); S.view=v;S.openId=null;setupTabs();render();}})));
   } else nav.hidden=true;
 }
 
@@ -669,7 +676,7 @@ function lookupView(){
         try{ const j=await api("lookup",{sid:sid.value.trim(),pin:pin.value.trim()});
           if(!j.rec){ err.hidden=false; err.textContent="일치하는 제출 내용이 없습니다. 학번과 연락처 뒤 4자리를 확인해 주세요."; }
           else { S.me=j.rec; lsSet("vrret_me",{sid:sid.value.trim(),pin:pin.value.trim()}); S.view="student"; render(); } }
-        catch{ err.hidden=false; err.textContent="조회하지 못했습니다. 인터넷 연결을 확인해 주세요."; }
+        catch(x){ err.hidden=false; err.textContent = x&&x.code==="locked" ? "조회 시도가 많아 15분간 잠겼습니다. 잠시 후 다시 시도해 주세요." : "조회하지 못했습니다. 인터넷 연결을 확인해 주세요."; }
         b.disabled=false; }})));
 }
 
@@ -677,7 +684,7 @@ function lookupView(){
 /* ---------- 처음 화면 / 안내 / 수정 ---------- */
 function goHome(){
   if (S.editing){ S.editing=false; S.me=S.prevMe||null; }
-  S.view="student"; S.openId=null; S.intro=false; if(!S.me) S.step=1;
+  clearHash(); S.view="student"; S.openId=null; S.intro=false; if(!S.me) S.step=1;
   setupTabs(); render(); window.scrollTo(0,0);
 }
 function editAgain(){
@@ -805,18 +812,83 @@ async function saveReceiptPng(r){
   download(`VR반납확인증_${r.sid}.png`, blob);
 }
 
+function saveFile(name, blob){ download(name, blob); }
+/* ---------- 엑셀(xlsx) 내보내기: 외부 라이브러리 없이 직접 생성 ---------- */
+const CRC_T = (()=>{ const t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++) c=c&1?0xEDB88320^(c>>>1):c>>>1; t[n]=c>>>0; } return t; })();
+function crc32(u8){ let c=0xFFFFFFFF; for(let i=0;i<u8.length;i++) c=CRC_T[(c^u8[i])&255]^(c>>>8); return (c^0xFFFFFFFF)>>>0; }
+function zipStore(files){
+  const enc=new TextEncoder(), parts=[], central=[]; let offset=0;
+  const u16=n=>[n&255,(n>>8)&255], u32=n=>[n&255,(n>>8)&255,(n>>16)&255,(n>>>24)&255];
+  for (const f of files){
+    const name=enc.encode(f.name), crc=crc32(f.data), size=f.data.length;
+    const local=new Uint8Array([0x50,0x4b,3,4,...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(size),...u32(size),...u16(name.length),...u16(0),...name]);
+    parts.push(local, f.data);
+    central.push(new Uint8Array([0x50,0x4b,1,2,...u16(20),...u16(20),...u16(0x0800),...u16(0),...u16(0),...u16(0x21),...u32(crc),...u32(size),...u32(size),...u16(name.length),...u16(0),...u16(0),...u16(0),...u16(0),...u32(0),...u32(offset),...name]));
+    offset += local.length + size;
+  }
+  const cdSize=central.reduce((a,c)=>a+c.length,0);
+  const end=new Uint8Array([0x50,0x4b,5,6,...u16(0),...u16(0),...u16(files.length),...u16(files.length),...u32(cdSize),...u32(offset),...u16(0)]);
+  return new Blob([...parts,...central,end],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+}
+const xesc = s => String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
+function xcol(i){ let s=""; i++; while(i>0){ const m=(i-1)%26; s=String.fromCharCode(65+m)+s; i=Math.floor((i-1)/26); } return s; }
+function sheetXml(rows){
+  const w=[]; rows.forEach(r=>r.forEach((v,i)=>{ const l=String(v==null?"":v).length; w[i]=Math.min(60,Math.max(w[i]||10,l*1.7+2)); }));
+  const cols = w.map((x,i)=>`<col min="${i+1}" max="${i+1}" width="${x.toFixed(1)}" customWidth="1"/>`).join("");
+  const body = rows.map((r,ri)=>`<row r="${ri+1}"${ri===0?' ht="22" customHeight="1"':""}>`+r.map((v,ci)=>{
+    if (v==null || v==="") return "";
+    const ref=xcol(ci)+(ri+1), st = ri===0 ? ' s="1"' : "";
+    if (typeof v==="number" && ri>0) return `<c r="${ref}"${st}><v>${v}</v></c>`;
+    return `<c r="${ref}" t="inlineStr"${st}><is><t xml:space="preserve">${xesc(v)}</t></is></c>`;
+  }).join("")+"</row>").join("");
+  const last = xcol(Math.max(0,(rows[0]||[]).length-1))+Math.max(1,rows.length);
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${cols}</cols><sheetData>${body}</sheetData><autoFilter ref="A1:${last}"/></worksheet>`;
+}
+function buildXlsx(sheets){
+  const enc=new TextEncoder(), X='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+  const files=[
+    {name:"[Content_Types].xml",xml:X+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")+'</Types>'},
+    {name:"_rels/.rels",xml:X+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>'},
+    {name:"xl/workbook.xml",xml:X+'<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>'+sheets.map((s,i)=>`<sheet name="${xesc(s[0])}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join("")+'</sheets></workbook>'},
+    {name:"xl/_rels/workbook.xml.rels",xml:X+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join("")+`<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name:"xl/styles.xml",xml:X+'<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Malgun Gothic"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Malgun Gothic"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFA61955"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>'},
+    ...sheets.map((s,i)=>({name:`xl/worksheets/sheet${i+1}.xml`,xml:sheetXml(s[1])}))
+  ].map(f=>({name:f.name,data:enc.encode(f.xml)}));
+  return zipStore(files);
+}
+const fmtDT = iso => { try{ const d=new Date(iso); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }catch{ return ""; } };
+function returnsTable(){
+  const head=["제출시각","상태","이름","학번","학과","연락처","반납방식","모델","시리얼(학생 입력)","시리얼(담당자 확인)","HMD 본체","컨트롤러","충전기","케이블","기기상태","상태 설명","특이사항","반납일자","라벨번호","외관 점검","성능 점검","시리얼 확인","확인시각","담당자 메모"];
+  const rows=[...S.all].sort((a,b)=>String(a.submittedAt).localeCompare(String(b.submittedAt))).map(r=>{
+    const st=r.staff||{}, ck=st.checks||{}, yn=v=>v?"확인":"";
+    return [fmtDT(r.submittedAt), r.status==="confirmed"?"확인 완료":"대기", r.name, r.sid, r.dept, r.phone, r.method==="parcel"?"택배":"방문", modelName(r.model), r.serial, st.serial||"",
+      ...PARTS.map(([k])=>(r.parts||{})[k]?"반납":"미반납"), COND[r.condition]||"", r.conditionNote||"", r.note||"", r.date||"", st.label||"", yn(ck.exterior), yn(ck.performance), yn(ck.serial), st.at?fmtDT(st.at):"", st.note||""];
+  });
+  return [head,...rows];
+}
+function surveyTable(){
+  const head=["응답일","학과","S1 사용 경험","A1 용도","A1 기타","A2 흥미(1~5)","B1 사용 기회","B2 미사용 이유","B2 기타","C1 의견"];
+  const rows=S.surveys.map(x=>[x.date||"",x.dept||"",x.s1==="yes"?"있다":"없다",(x.a1||[]).join(" / "),x.a1other||"",typeof x.a2==="number"?x.a2:"",x.b1||"",x.b2||"",x.b2other||"",x.c1||""]);
+  return [head,...rows];
+}
+async function exportXlsx(e){
+  const b=e&&e.currentTarget; if(b){ b.disabled=true; }
+  try{ await saveFile(`VR반납현황_${todayISO()}.xlsx`, buildXlsx([["반납현황",returnsTable()],["설문응답",surveyTable()]])); }
+  catch{} finally{ if(b) b.disabled=false; }
+}
+
 /* ---------- staff ---------- */
 function staffLogin(){
   const err=h("div",{class:"err",hidden:true,role:"alert"});
   const key=h("input",{type:"password",id:"s-key",autocomplete:"current-password"});
   const go=async e=>{ const b=$("#s-go"); err.hidden=true; b.disabled=true; S.key=key.value;
     try{ await loadStaff(); ssSet("vrret_key",S.key); S.view="staff"; setupTabs(); render(); }
-    catch(x){ S.key=null; err.hidden=false; err.textContent = x&&x.code==="unauthorized" ? "담당자 키가 올바르지 않습니다." : "불러오지 못했습니다. 인터넷 연결과 서버 설정을 확인해 주세요."; b.disabled=false; } };
+    catch(x){ S.key=null; err.hidden=false; err.textContent = x&&x.code==="locked" ? "로그인 시도가 많아 15분간 잠겼습니다. 잠시 후 다시 시도해 주세요." : x&&x.code==="unauthorized" ? "담당자 키가 올바르지 않습니다." : "불러오지 못했습니다. 인터넷 연결과 서버 설정을 확인해 주세요."; b.disabled=false; } };
   key.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
   return h("div",{class:"panel"},
     h("div",{class:"cardhead",html:PIN_SVG+"<span>담당자 로그인</span>"}),
     h("p",{class:"lead",text:"담당자에게 전달된 키를 입력하세요."}), field("담당자 키",key), err,
-    h("div",{class:"btnrow"},h("button",{class:"btn ghost",type:"button",text:"돌아가기",onclick:()=>{S.view="student";setupTabs();render();}}),h("button",{class:"btn grow",type:"button",id:"s-go",text:"로그인",onclick:go})));
+    h("div",{class:"btnrow"},h("button",{class:"btn ghost",type:"button",text:"돌아가기",onclick:()=>{clearHash();S.view="student";setupTabs();render();}}),h("button",{class:"btn grow",type:"button",id:"s-go",text:"로그인",onclick:go})));
 }
 function staffView(){
   const wrap=h("div",{});
@@ -824,7 +896,7 @@ function staffView(){
   wrap.append(h("div",{class:"tabs",style:"margin-bottom:14px;flex-wrap:wrap"},
     ...[["returns","반납 현황"],["survey","설문 결과"]].map(([k,l])=>h("button",{type:"button","aria-pressed":String(S.staffTab===k),text:l,onclick:()=>{S.staffTab=k;render();}})),
     h("button",{type:"button",text:"새로고침",onclick:async e=>{ e.currentTarget.disabled=true; try{await loadStaff();}catch{} render(); }}),
-    h("button",{type:"button",text:"로그아웃",onclick:()=>{S.key=null;S.all=[];S.surveys=[];ssSet("vrret_key",null);S.view="student";setupTabs();render();}})));
+    h("button",{type:"button",text:"로그아웃",onclick:()=>{S.key=null;S.all=[];S.surveys=[];ssSet("vrret_key",null);clearHash();S.view="student";setupTabs();render();}})));
   wrap.append(S.staffTab==="returns" ? staffList() : staffSurvey());
   return wrap;
 }
@@ -857,7 +929,7 @@ function staffList(){
   const search=h("input",{type:"text",placeholder:"이름·학번·시리얼 검색","aria-label":"검색",id:"s-q"}); search.value=S.query; search.addEventListener("input",()=>{S.query=search.value;draw();});
   const chips=h("div",{class:"chips"});
   [["all","전체"],["pending","확인 대기"],["confirmed","확인 완료"],["issue","이상"]].forEach(([k,l])=>chips.append(h("button",{type:"button",class:"chip","aria-pressed":String(S.filter===k),text:l,onclick:e=>{S.filter=k;[...chips.children].forEach(c=>c.setAttribute("aria-pressed","false"));e.currentTarget.setAttribute("aria-pressed","true");draw();}})));
-  wrap.append(h("div",{class:"toolbar"},chips,search,h("button",{class:"btn ghost small",type:"button",text:"CSV로 저장",onclick:()=>exportCsv(`VR반납현황_${todayISO()}.csv`,[["제출시각","상태","이름","학번","학과","연락처","반납방식","모델","시리얼","HMD","컨트롤러","충전기","케이블","기기상태","상태설명","특이사항","반납일자","라벨번호","확인시각","담당자메모"]].concat(all.map(r=>[r.submittedAt,r.status==="confirmed"?"확인완료":"대기",r.name,r.sid,r.dept,r.phone,r.method==="parcel"?"택배":"방문",modelName(r.model),(r.staff&&r.staff.serial)||r.serial,...PARTS.map(([k])=>(r.parts||{})[k]?"반납":"미반납"),COND[r.condition],r.conditionNote,r.note,r.date,r.staff&&r.staff.label,r.staff&&r.staff.at,r.staff&&r.staff.note])))})));
+  wrap.append(h("div",{class:"toolbar"},chips,search,h("button",{class:"btn small",type:"button",text:"엑셀로 다운로드",onclick:exportXlsx}),h("button",{class:"btn ghost small",type:"button",text:"CSV로 저장",onclick:()=>exportCsv(`VR반납현황_${todayISO()}.csv`,[["제출시각","상태","이름","학번","학과","연락처","반납방식","모델","시리얼","HMD","컨트롤러","충전기","케이블","기기상태","상태설명","특이사항","반납일자","라벨번호","확인시각","담당자메모"]].concat(all.map(r=>[r.submittedAt,r.status==="confirmed"?"확인완료":"대기",r.name,r.sid,r.dept,r.phone,r.method==="parcel"?"택배":"방문",modelName(r.model),(r.staff&&r.staff.serial)||r.serial,...PARTS.map(([k])=>(r.parts||{})[k]?"반납":"미반납"),COND[r.condition],r.conditionNote,r.note,r.date,r.staff&&r.staff.label,r.staff&&r.staff.at,r.staff&&r.staff.note])))})));
   wrap.append(list); draw();
   return wrap;
 }
@@ -921,7 +993,7 @@ function staffSurvey(){
   const sv=S.surveys, wrap=h("div",{});
   const users=sv.filter(x=>x.s1==="yes"), non=sv.filter(x=>x.s1==="no");
   wrap.append(h("div",{class:"toolbar"},h("span",{class:"lead",style:"margin:0",text:`응답 ${sv.length}건`}),
-    h("button",{class:"btn ghost small",type:"button",text:"CSV로 저장",onclick:()=>exportCsv(`VR설문응답_${todayISO()}.csv`,[["응답일","학과","S1 사용경험","A1 용도","A1 기타","A2 흥미(1-5)","B1 기회","B2 이유","B2 기타","C1 의견"]].concat(sv.map(x=>[x.date,x.dept,x.s1==="yes"?"있다":"없다",(x.a1||[]).join(" / "),x.a1other,x.a2,x.b1,x.b2,x.b2other,x.c1])))})));
+    h("button",{class:"btn small",type:"button",text:"엑셀로 다운로드",onclick:exportXlsx}),h("button",{class:"btn ghost small",type:"button",text:"CSV로 저장",onclick:()=>exportCsv(`VR설문응답_${todayISO()}.csv`,[["응답일","학과","S1 사용경험","A1 용도","A1 기타","A2 흥미(1-5)","B1 기회","B2 이유","B2 기타","C1 의견"]].concat(sv.map(x=>[x.date,x.dept,x.s1==="yes"?"있다":"없다",(x.a1||[]).join(" / "),x.a1other,x.a2,x.b1,x.b2,x.b2other,x.c1])))})));
   if(!sv.length){ wrap.append(h("div",{class:"tablewrap"},h("div",{class:"empty-state",text:"아직 설문 응답이 없습니다. 학생이 제출하면 집계가 나타납니다."}))); return wrap; }
   const q=(id,title,body)=>h("div",{class:"qcard"},h("h4",{},h("span",{class:"qid",text:id}),title),body);
   wrap.append(q("S1","VR 기기 사용 경험", barList([["있다",users.length],["없다",non.length]],sv.length)));
